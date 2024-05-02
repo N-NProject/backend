@@ -15,6 +15,8 @@ services:
       - '5432:5432'
     volumes:
       - ./:/var/lib/postgresql/data
+    networks:
+      - backend-network
 
   backend:
     container_name: nest
@@ -23,8 +25,13 @@ services:
       dockerfile: Dockerfile
     restart: always
     environment:
-      - TZ=Asia/Seoul
+      TZ: Asia/Seoul
     ports:
       - '3000:3000'
     depends_on:
       - db
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
