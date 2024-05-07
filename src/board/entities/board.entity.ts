@@ -2,16 +2,15 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
-  UpdateDateColumn,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../user/entities/user.entity';
+import { Timestamp } from '../../global/common/timestamp';
 
 @Entity('board')
-export class Board {
+export class Board extends Timestamp {
   @PrimaryGeneratedColumn()
   @ApiProperty({ description: '게시판 ID' })
   id: number;
@@ -32,38 +31,4 @@ export class Board {
   @Column({ type: 'varchar', nullable: true })
   @ApiProperty({ description: '설명', nullable: true })
   description: string;
-
-  @Column({ type: 'timestamp', nullable: true })
-  @ApiProperty({
-    description: '시간',
-    nullable: true,
-    type: 'string',
-    format: 'date-time',
-  })
-  time: Date;
-
-  @CreateDateColumn()
-  @ApiProperty({
-    description: '생성 시각',
-    type: 'string',
-    format: 'date-time',
-  })
-  created_at: Date;
-
-  @UpdateDateColumn()
-  @ApiProperty({
-    description: '업데이트 시각',
-    type: 'string',
-    format: 'date-time',
-  })
-  updated_at: Date;
-
-  @Column({ type: 'timestamp', nullable: true })
-  @ApiProperty({
-    description: '삭제 시각',
-    nullable: true,
-    type: 'string',
-    format: 'date-time',
-  })
-  deleted_at: Date;
 }

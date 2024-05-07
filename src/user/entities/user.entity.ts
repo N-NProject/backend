@@ -1,64 +1,25 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  OneToMany,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Board } from '../../board/entities/board.entity';
+import { Timestamp } from '../../global/common/timestamp';
 @Entity('user')
-export class User {
+export class User extends Timestamp {
   @PrimaryGeneratedColumn()
-  @ApiProperty({ description: '사용자 ID' })
+  @ApiProperty({ description: 'user_id' })
   id: number;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
-  @ApiProperty({ description: '카카오 ID', nullable: true })
-  kakao: string;
+  @Column({ name: 'kakao_id', unique: true })
+  @ApiProperty({ description: 'kakao_id' })
+  kakaoId: number;
 
-  @Column({ type: 'varchar', length: 100 })
-  @ApiProperty({ description: '이름' })
-  name: string;
+  @Column()
+  @ApiProperty({ description: 'UserName' })
+  username: string;
 
-  @Column({ type: 'varchar' })
-  @ApiProperty({ description: '이메일' })
-  email: string;
-
-  @Column({ type: 'varchar' })
-  @ApiProperty({ description: '비밀번호' })
-  password: string;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  @ApiProperty({ description: '지역', nullable: true })
+  @Column()
+  @ApiProperty({ description: '지역' })
   region: string;
 
-  @CreateDateColumn()
-  @ApiProperty({
-    description: '계정 생성 시각',
-    type: 'string',
-    format: 'date-time',
-  })
-  created_at: Date;
-
-  @UpdateDateColumn()
-  @ApiProperty({
-    description: '계정 업데이트 시각',
-    type: 'string',
-    format: 'date-time',
-  })
-  updated_at: Date;
-
-  @Column({ type: 'timestamp', nullable: true })
-  @ApiProperty({
-    description: '계정 삭제 시각',
-    nullable: true,
-    type: 'string',
-    format: 'date-time',
-  })
-  deleted_at: Date;
-
-  @OneToMany(() => Board, (board) => board.user) // User to Boards 관계 정의
+  @OneToMany(() => Board, (board) => board.user)
   boards: Board[];
 }
