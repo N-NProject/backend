@@ -16,7 +16,7 @@ export class Board {
   @ApiProperty({ description: '게시판 ID' })
   id: number;
 
-  @ManyToOne(() => User, (user) => user.boards) // Many Boards to one User 관계 정의
+  @ManyToOne(() => User, (user) => user.boards)
   @JoinColumn({ name: 'user_id' })
   @ApiProperty({ description: '사용자 ID' })
   user: User;

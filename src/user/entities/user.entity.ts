@@ -7,8 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { Board } from '../../board/entities/board.entity'; // 경로에 주의하세요.
-
+import { Board } from '../../board/entities/board.entity';
 @Entity('user')
 export class User {
   @PrimaryGeneratedColumn()
