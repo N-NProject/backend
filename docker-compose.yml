@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7' 
 
 services:
   db:
@@ -16,7 +16,7 @@ services:
     volumes:
       - ./:/var/lib/postgresql/data
     networks:
-      - backend-network
+      - custom-network
 
   backend:
     container_name: nest
@@ -27,11 +27,12 @@ services:
     environment:
       TZ: Asia/Seoul
     ports:
-      - '3000:3000'
+      - '9090:9090'
     depends_on:
       - db
     networks:
-      - backend-network
+      - custom-network
 
 networks:
-  backend-network:
+  custom-network:
+    name: whispertalk_custom-network

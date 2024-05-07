@@ -1,12 +1,5 @@
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '../../user/entities/user.entitiy';
 import { Timestamp } from '../../global/common/timeStamp';
 
 @Entity('boards')
@@ -15,20 +8,15 @@ export class Board extends Timestamp {
   @ApiProperty({ description: '게시글 ID' })
   id: number;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'user_id' })
-  @ApiProperty({ description: '게시글을 작성한 사용자' })
-  user: User;
-
   @Column({ name: 'title', type: 'varchar', length: 100, nullable: false })
   @ApiProperty({ description: '게시글의 제목' })
   title: string;
 
-  @Column({ name: 'max_capacity', type: 'int', nullable: true })
+  @Column({ name: 'max_capacity', type: 'int', nullable: false })
   @ApiProperty({ description: '게시글의 최대 참여 인원' })
   max_capacity: number;
 
-  @Column({ name: 'description', type: 'text', nullable: true })
+  @Column({ name: 'description', type: 'text', nullable: false })
   @ApiProperty({ description: '게시글의 설명' })
   description: string;
 
