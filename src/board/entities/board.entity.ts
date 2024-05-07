@@ -1,38 +1,69 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { Timestamp } from '../../global/common/timeStamp';
+import { User } from '../../user/entities/user.entity';
 
-@Entity('boards')
-export class Board extends Timestamp {
-  @PrimaryGeneratedColumn('increment', { name: 'board_id' })
-  @ApiProperty({ description: '게시글 ID' })
+@Entity('board')
+export class Board {
+  @PrimaryGeneratedColumn()
+  @ApiProperty({ description: '게시판 ID' })
   id: number;
 
-  @Column({ name: 'title', type: 'varchar', length: 100, nullable: false })
-  @ApiProperty({ description: '게시글의 제목' })
+  @ManyToOne(() => User, (user) => user.boards) // Many Boards to one User 관계 정의
+  @JoinColumn({ name: 'user_id' })
+  @ApiProperty({ description: '사용자 ID' })
+  user: User;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  @ApiProperty({ description: '제목', nullable: true })
   title: string;
 
-  @Column({ name: 'max_capacity', type: 'int', nullable: false })
-  @ApiProperty({ description: '게시글의 최대 참여 인원' })
+  @Column({ type: 'int' })
+  @ApiProperty({ description: '최대 참가 인원' })
   max_capacity: number;
 
-  @Column({ name: 'description', type: 'text', nullable: false })
-  @ApiProperty({ description: '게시글의 설명' })
+  @Column({ type: 'varchar', nullable: true })
+  @ApiProperty({ description: '설명', nullable: true })
   description: string;
 
-  @Column({ name: 'time', type: 'timestamp', nullable: true })
-  @ApiProperty({ description: '게시글의 특정 시간' })
+  @Column({ type: 'timestamp', nullable: true })
+  @ApiProperty({
+    description: '시간',
+    nullable: true,
+    type: 'string',
+    format: 'date-time',
+  })
   time: Date;
 
-  @Column({ name: 'created_at', type: 'timestamp', nullable: true })
-  @ApiProperty({ description: '생성 시간' })
+  @CreateDateColumn()
+  @ApiProperty({
+    description: '생성 시각',
+    type: 'string',
+    format: 'date-time',
+  })
   created_at: Date;
 
-  @Column({ name: 'updated_at', type: 'timestamp', nullable: true })
-  @ApiProperty({ description: '업데이트 시간' })
+  @UpdateDateColumn()
+  @ApiProperty({
+    description: '업데이트 시각',
+    type: 'string',
+    format: 'date-time',
+  })
   updated_at: Date;
 
-  @Column({ name: 'deleted_at', type: 'timestamp', nullable: true })
-  @ApiProperty({ description: '삭제 시간' })
+  @Column({ type: 'timestamp', nullable: true })
+  @ApiProperty({
+    description: '삭제 시각',
+    nullable: true,
+    type: 'string',
+    format: 'date-time',
+  })
   deleted_at: Date;
 }
