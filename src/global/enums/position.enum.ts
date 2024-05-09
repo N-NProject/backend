@@ -1,4 +1,4 @@
 export enum Position {
-  backend = 'Backend',
-  frontend = 'Frontend',
+  BACKEND = 'Backend',
+  FRONTEND = 'Frontend',
 }
