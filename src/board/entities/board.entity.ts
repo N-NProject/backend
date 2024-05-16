@@ -7,7 +7,9 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../user/entities/user.entity';
-import { Timestamp } from '../../global/common/timestamp';
+import { Timestamp } from '../../global/common/timeStamp';
+import { Location } from '../../location/entities/location.entity';
+import { Category } from '../../global/enums/category.enum';
 
 @Entity('board')
 export class Board extends Timestamp {
@@ -31,4 +33,21 @@ export class Board extends Timestamp {
   @Column({ type: 'varchar', nullable: true })
   @ApiProperty({ description: '설명', nullable: true })
   description: string;
+
+  @Column({ type: 'time', nullable: true })
+  @ApiProperty({ description: '시작시간', nullable: true })
+  start_time: string;
+
+  @Column({ type: 'time', nullable: false })
+  @ApiProperty({ description: '종료 시간', nullable: false })
+  end_time: string;
+
+  @ManyToOne(() => Location, (location) => location.boards)
+  @JoinColumn({ name: 'location_id' })
+  @ApiProperty({ description: '위치 ID' })
+  location: Location;
+
+  @Column({ type: 'enum', enum: Category, nullable: false })
+  @ApiProperty({ description: '카테고리' })
+  category: Category;
 }

@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   db:
-    image: postgres
+    image: postgis/postgis:latest
     container_name: postgres
     restart: always
     environment:
@@ -14,7 +14,8 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - ./:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - custom-network
 
@@ -26,6 +27,11 @@ services:
     restart: always
     environment:
       TZ: Asia/Seoul
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
     ports:
       - '9090:9090'
     depends_on:
@@ -36,3 +42,6 @@ services:
 networks:
   custom-network:
     name: whispertalk_custom-network
+
+volumes:
+  postgres_data:
