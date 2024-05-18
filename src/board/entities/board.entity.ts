@@ -6,7 +6,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '../../user/entities/user.entity';
+import { User } from '../../user/entity/user.entity';
 import { Timestamp } from '../../global/common/timestamp';
 
 @Entity('board')

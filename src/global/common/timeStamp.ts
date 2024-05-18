@@ -7,11 +7,11 @@ import {
 
 export abstract class Timestamp extends BaseEntity {
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
-  updated_at: Date;
+  updatedAt: Date;
 
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
-  deleted_at: Date | null;
+  deletedAt: Date | null;
 }
