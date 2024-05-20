@@ -17,6 +17,7 @@ export class BoardController {
       max_capacity: board.max_capacity,
       description: board.description,
       start_time: board.start_time,
+      date: board.date,
       category: board.category,
       user: {
         user_id: board.user.id,

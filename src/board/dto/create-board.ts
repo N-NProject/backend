@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsEnum, IsInt, IsString, IsObject } from 'class-validator';
+import { IsNotEmpty, IsEnum, IsInt, IsString, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Category } from '../../global/enums/category.enum';
 
@@ -24,8 +24,10 @@ export class CreateBoardDto {
 
   @ApiProperty({ description: '위치 좌표' })
   @IsNotEmpty()
-  @IsObject()
-  readonly coordinate: { type: string; coordinates: [number, number] };
+  readonly coordinate: {
+    type: string;
+    coordinates: [number, number];
+  };
 
   @ApiProperty({ description: '위치 이름' })
   @IsNotEmpty()

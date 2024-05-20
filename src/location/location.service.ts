@@ -19,7 +19,7 @@ export class LocationService {
     location_name: string;
   }): Promise<Location> {
     const location = this.locationRepository.create({
-      coordinate: data.coordinate, // 수정된 부분
+      coordinate: data.coordinate,
       location_name: data.location_name,
     });
     await this.locationRepository.save(location);

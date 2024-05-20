@@ -46,4 +46,8 @@ export class Board extends Timestamp {
   @Column({ type: 'enum', enum: Category, nullable: false })
   @ApiProperty({ description: '카테고리' })
   category: Category;
+
+  @Column({ type: 'date', nullable: false })
+  @ApiProperty({ description: '날짜', nullable: false })
+  date: string;
 }

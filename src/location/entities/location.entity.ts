@@ -15,7 +15,7 @@ export class Location {
     nullable: false,
   })
   @ApiProperty({ description: '좌표', nullable: false })
-  coordinate: object; // 수정된 부분
+  coordinate: object;
 
   @Column({ type: 'varchar', length: 100, nullable: false })
   @ApiProperty({ description: '위치 이름', nullable: false })
