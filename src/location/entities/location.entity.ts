@@ -10,12 +10,12 @@ export class Location {
 
   @Column({
     type: 'geometry',
-    nullable: false,
     spatialFeatureType: 'Point',
     srid: 4326,
+    nullable: false,
   })
   @ApiProperty({ description: '좌표', nullable: false })
-  coordinate: string;
+  coordinate: object; // 수정된 부분
 
   @Column({ type: 'varchar', length: 100, nullable: false })
   @ApiProperty({ description: '위치 이름', nullable: false })

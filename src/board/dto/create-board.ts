@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsEnum, IsInt, IsString, IsArray } from 'class-validator';
+import { IsNotEmpty, IsEnum, IsInt, IsString, IsObject } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Category } from '../../global/enums/category.enum';
 
@@ -22,17 +22,22 @@ export class CreateBoardDto {
   @IsString()
   readonly description: string;
 
-  @ApiProperty({ description: '위치 ID' })
+  @ApiProperty({ description: '위치 좌표' })
   @IsNotEmpty()
-  @IsInt()
-  readonly location_id: number;
+  @IsObject()
+  readonly coordinate: { type: string; coordinates: [number, number] };
+
+  @ApiProperty({ description: '위치 이름' })
+  @IsNotEmpty()
+  @IsString()
+  readonly location_name: string;
 
   @ApiProperty({ description: '게시물 최대 참여 가능 인원' })
   @IsNotEmpty()
   @IsInt()
   readonly max_capacity: number;
 
-  @ApiProperty({ description: ' 만나는 날짜' })
+  @ApiProperty({ description: '만나는 날짜' })
   @IsNotEmpty()
   @IsString()
   readonly date: string;
@@ -41,9 +46,4 @@ export class CreateBoardDto {
   @IsNotEmpty()
   @IsString()
   readonly start_time: string;
-
-  @ApiProperty({ description: ' 종료 시간' })
-  @IsNotEmpty()
-  @IsString()
-  readonly end_time: string;
 }

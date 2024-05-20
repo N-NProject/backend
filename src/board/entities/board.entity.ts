@@ -38,13 +38,9 @@ export class Board extends Timestamp {
   @ApiProperty({ description: '시작시간', nullable: true })
   start_time: string;
 
-  @Column({ type: 'time', nullable: false })
-  @ApiProperty({ description: '종료 시간', nullable: false })
-  end_time: string;
-
   @ManyToOne(() => Location, (location) => location.boards)
   @JoinColumn({ name: 'location_id' })
-  @ApiProperty({ description: '위치 ID' })
+  @ApiProperty({ description: '위치' })
   location: Location;
 
   @Column({ type: 'enum', enum: Category, nullable: false })

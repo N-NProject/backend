@@ -13,4 +13,16 @@ export class LocationService {
   async findOne(id: number): Promise<Location> {
     return this.locationRepository.findOneOrFail({ where: { id } });
   }
+
+  async createLocation(data: {
+    coordinate: { type: string; coordinates: [number, number] };
+    location_name: string;
+  }): Promise<Location> {
+    const location = this.locationRepository.create({
+      coordinate: data.coordinate, // 수정된 부분
+      location_name: data.location_name,
+    });
+    await this.locationRepository.save(location);
+    return location;
+  }
 }
