@@ -3,6 +3,7 @@ import { User } from './entity/user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserDto } from './dto/user.dto';
+import { UserResponseDto } from './dto/user.response.dto';
 
 @Injectable()
 export class UserService {
@@ -20,18 +21,35 @@ export class UserService {
         return this.userRepository.save(user);
     }
 
-    async getUserById(id: number): Promise<User> {
-        const found = await this.userRepository.findOneBy({ id });
+    async getUserById(id: number): Promise<UserResponseDto> {
+        const user = await this.userRepository.findOne({
+            where: { id },
+            relations: ['boards'],
+        });
 
-        if (!found) {
+        if (!user) {
             throw new NotFoundException(`Can't find Board with id ${id}`);
         }
 
-        return found;
+        const createdBoards = user.boards.filter(board => board.user.id === id);
+        const joinedBoards = user.boards.filter(board => board.user.id !== id);
+
+        const userResponseDto: UserResponseDto = {
+            username: user.username,
+            region: user.region,
+            createdBoards,
+            joinedBoards
+        };
+
+        return userResponseDto;
     }
 
     async updateUser(id: number, userDto: UserDto): Promise<void> {
-        const user = await this.getUserById(id);
+        const user = await this.userRepository.findOneBy({ id });
+
+        if (!user) {
+            throw new NotFoundException(`Can't find Board with id ${id}`);
+        }
 
         Object.assign(user, userDto);
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Redirect, Res, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query, Redirect, Res } from '@nestjs/common';
 import axios from 'axios';
 import { Response } from 'express';
 import { UserService } from 'src/user/user.service';
@@ -62,7 +62,7 @@ export class AuthController {
 
             return this.authService.getJwt(user.id);
         } catch {
-            throw new UnauthorizedException();
+            throw new BadRequestException();
         }
     }
 

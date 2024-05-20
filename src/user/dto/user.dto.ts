@@ -1,11 +1,11 @@
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UserDto {
   @IsString()
-  @MinLength(4)
-  @MaxLength(16)
+  @IsOptional()
   readonly username?: string;
 
   @IsString()
+  @IsOptional()
   readonly region?: string;
 }
