@@ -2,14 +2,13 @@ version: '3.7'
 
 services:
   db:
-    image: postgis/postgis:latest
+    image: postgres:latest
     container_name: postgres
     restart: always
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      PGDATA: /var/lib/postgresql/data/pgdata
       TZ: Asia/Seoul
     ports:
       - '5432:5432'

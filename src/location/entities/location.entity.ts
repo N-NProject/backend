@@ -8,14 +8,13 @@ export class Location {
   @ApiProperty({ description: '위치 ID' })
   id: number;
 
-  @Column({
-    type: 'geometry',
-    spatialFeatureType: 'Point',
-    srid: 4326,
-    nullable: false,
-  })
-  @ApiProperty({ description: '좌표', nullable: false })
-  coordinate: object;
+  @Column({ type: 'float', nullable: false })
+  @ApiProperty({ description: '위도', nullable: false })
+  latitude: number;
+
+  @Column({ type: 'float', nullable: false })
+  @ApiProperty({ description: '경도', nullable: false })
+  longitude: number;
 
   @Column({ type: 'varchar', length: 100, nullable: false })
   @ApiProperty({ description: '위치 이름', nullable: false })

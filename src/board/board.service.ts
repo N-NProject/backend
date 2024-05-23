@@ -22,15 +22,17 @@ export class BoardService {
       title,
       category,
       description,
-      coordinate,
+      location,
       location_name,
       max_capacity,
       date,
       start_time,
     } = createBoardDto;
 
-    const location = await this.locationService.createLocation({
-      coordinate,
+    // LocationService를 통해 새로운 위치를 생성합니다.
+    const newLocation = await this.locationService.createLocation({
+      latitude: location.latitude,
+      longitude: location.longitude,
       location_name,
     });
 
@@ -39,11 +41,11 @@ export class BoardService {
       title,
       category,
       description,
-      location,
+      location: newLocation,
       max_capacity,
       date,
       start_time,
-    } as Partial<Board>);
+    });
 
     await this.boardRepository.save(board);
     return board;

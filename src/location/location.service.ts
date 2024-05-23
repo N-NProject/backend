@@ -10,16 +10,14 @@ export class LocationService {
     private readonly locationRepository: Repository<Location>,
   ) {}
 
-  async findOne(id: number): Promise<Location> {
-    return this.locationRepository.findOneOrFail({ where: { id } });
-  }
-
   async createLocation(data: {
-    coordinate: { type: string; coordinates: [number, number] };
+    latitude: number;
+    longitude: number;
     location_name: string;
   }): Promise<Location> {
     const location = this.locationRepository.create({
-      coordinate: data.coordinate,
+      latitude: data.latitude,
+      longitude: data.longitude,
       location_name: data.location_name,
     });
     await this.locationRepository.save(location);
