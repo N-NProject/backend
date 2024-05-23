@@ -23,4 +23,15 @@ export class LocationService {
     await this.locationRepository.save(location);
     return location;
   }
+
+  async findLocationByCoordinates(
+    latitude: number,
+    longitude: number,
+  ): Promise<Location | null> {
+    return this.locationRepository.findOne({ where: { latitude, longitude } });
+  }
+
+  async updateLocation(location: Location): Promise<Location> {
+    return this.locationRepository.save(location);
+  }
 }

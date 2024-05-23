@@ -23,7 +23,12 @@ export class BoardController {
         user_id: board.user.id,
         username: board.user.username,
       },
-      location_id: board.location.id, // 위치의 ID만 반환합니다.
+      location: {
+        id: board.location.id,
+        latitude: board.location.latitude,
+        longitude: board.location.longitude,
+        location_name: board.location.location_name,
+      },
       created_at: board.created_at,
       updated_at: board.updated_at,
       deleted_at: board.deleted_at,
