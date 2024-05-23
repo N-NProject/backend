@@ -1,4 +1,4 @@
 import { Controller } from '@nestjs/common';
 
-@Controller('location')
+@Controller('locations')
 export class LocationController {}
