@@ -14,8 +14,12 @@ export class ChatRoom extends Timestamp {
   chat_name: string;
 
   @Column({ name: 'member_count', type: 'int', nullable: false })
-  @ApiProperty({ description: '채팅방 전체 인원' })
-  member_count: string;
+  @ApiProperty({ description: '현재 채팅방 인원' })
+  member_count: number;
+
+  @Column({ name: 'max_member_count', type: 'int', nullable: false })
+  @ApiProperty({ description: '채팅방 최대 인원' })
+  max_member_count: number;
 
   @OneToMany(() => Board, (board) => board.chat_room)
   boards: Board[];

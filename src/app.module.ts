@@ -7,6 +7,7 @@ import { TypeOrmConfigService } from './database/typeorm.config';
 import { BoardsModule } from './board/board.module';
 import { getEnvPath } from './global/common/helper/env.helper';
 import { UserModule } from './user/user.module';
+import { ChatRoomModule } from './chat-room/chat-room.module';
 
 const envFilePath: string = getEnvPath(`${__dirname}/common/envs`);
 
@@ -21,6 +22,7 @@ const envFilePath: string = getEnvPath(`${__dirname}/common/envs`);
     }),
     BoardsModule,
     UserModule,
+    ChatRoomModule,
   ],
   controllers: [AppController],
   providers: [AppService],
