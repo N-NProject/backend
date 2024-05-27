@@ -5,7 +5,7 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { Token } from 'src/auth/auth.decorator';
 import { UserResponseDto } from './dto/user.response.dto';
 
-@Controller('users')
+@Controller('api/v1/users')
 export class UserController {
     constructor(private readonly userService: UserService) { }
 

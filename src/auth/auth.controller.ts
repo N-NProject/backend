@@ -5,7 +5,7 @@ import { UserService } from 'src/user/user.service';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 
-@Controller('auth')
+@Controller('api/v1/auth')
 export class AuthController {
     readonly origin: string;
     readonly client_id: string;
