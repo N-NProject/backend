@@ -19,7 +19,7 @@ export class AuthController {
         this.origin = this.config.get<string>('ORIGIN');
         this.client_id = this.config.get<string>('REST_API');
 
-        this.redirect_uri = `${this.origin}/auth/redirect`;
+        this.redirect_uri = `${this.origin}/api/v1/auth/redirect`;
     }
 
     @Get('authorize')
