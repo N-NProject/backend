@@ -8,6 +8,8 @@ import { BoardsModule } from './board/board.module';
 import { getEnvPath } from './global/common/helper/env.helper';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { LocationService } from './location/location.service';
+import { LocationModule } from './location/location.module';
 
 const envFilePath: string = getEnvPath('./');
 
@@ -23,6 +25,7 @@ const envFilePath: string = getEnvPath('./');
     BoardsModule,
     UserModule,
     AuthModule,
+    LocationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
