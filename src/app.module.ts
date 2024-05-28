@@ -7,6 +7,8 @@ import { TypeOrmConfigService } from './database/typeorm.config';
 import { BoardsModule } from './board/board.module';
 import { getEnvPath } from './global/common/helper/env.helper';
 import { UserModule } from './user/user.module';
+import { LocationService } from './location/location.service';
+import { LocationModule } from './location/location.module';
 
 const envFilePath: string = getEnvPath(`${__dirname}/common/envs`);
 
@@ -21,6 +23,7 @@ const envFilePath: string = getEnvPath(`${__dirname}/common/envs`);
     }),
     BoardsModule,
     UserModule,
+    LocationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

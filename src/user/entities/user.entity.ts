@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Board } from '../../board/entities/board.entity';
-import { Timestamp } from '../../global/common/timestamp';
+import { Timestamp } from '../../global/common/timeStamp';
 @Entity('user')
 export class User extends Timestamp {
   @PrimaryGeneratedColumn()
