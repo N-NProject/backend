@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Post, Query } from '@nestjs/common';
 import { ChatRoomService } from './chat-room.service';
 import { ChatRoom } from './entities/chat-room.entity';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
@@ -10,13 +10,13 @@ export class ChatRoomController {
   constructor(private readonly chatRoomService: ChatRoomService) {}
 
   /**
-   * FIXME : endpoint 변경
+   * 게시글의 채팅방 접속
    */
-  @Post('join/:boardId/:userId')
+  @Post('join')
   async accessChatRoom(
-    @Param() boardIdDto: BoardIdDto,
-    @Param('userId') userIdDto: UserIdDto,
     @Body() createChatRoomDto: CreateChatRoomDto,
+    @Query() boardIdDto: BoardIdDto,
+    @Query() userIdDto: UserIdDto,
   ): Promise<ChatRoom> {
     const chatRoom = await this.chatRoomService.findOrCreateChatRoom(
       boardIdDto.boardId,

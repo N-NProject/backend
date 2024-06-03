@@ -1,8 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt } from 'class-validator';
+import { IsNotEmpty, IsNumber } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class UserIdDto {
   @ApiProperty({ description: '유저 id' })
-  @IsInt()
+  @IsNumber()
+  @IsNotEmpty()
+  @Transform(({ value }) => Number(value))
   userId: number;
 }

@@ -2,6 +2,7 @@ import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Timestamp } from '../../global/common/timeStamp';
 import { ApiProperty } from '@nestjs/swagger';
 import { Board } from '../../board/entities/board.entity';
+import { UserChatRoom } from '../../user-chat-room/entities/user-chat-room.entity';
 
 @Entity('chat_room')
 export class ChatRoom extends Timestamp {
@@ -23,4 +24,7 @@ export class ChatRoom extends Timestamp {
 
   @OneToMany(() => Board, (board) => board.chat_room)
   boards: Board[];
+
+  @OneToMany(() => UserChatRoom, (userChatRoom) => userChatRoom.chatRoom)
+  userChatRooms: UserChatRoom[];
 }
