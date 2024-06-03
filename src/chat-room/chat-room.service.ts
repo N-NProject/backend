@@ -33,7 +33,7 @@ export class ChatRoomService {
       relations: ['chat_room', 'user'],
     });
     if (!board) {
-      throw new NotFoundException('Board not found');
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
     }
 
     let chatRoom = board.chat_room;
@@ -61,7 +61,7 @@ export class ChatRoomService {
       where: { id: chatRoomId },
     });
     if (!chatRoom) {
-      throw new NotFoundException('Chat room not found');
+      throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
 
     const existingEntry = await this.userChatRoomRepository.findOne({
@@ -90,5 +90,28 @@ export class ChatRoomService {
       chatRoom,
     });
     await this.userChatRoomRepository.save(userChatRoom);
+  }
+
+  async leaveChatRoom(chatRoomId: number, userId: number): Promise<void> {
+    const chatRoom = await this.chatRoomRepository.findOne({
+      where: { id: chatRoomId },
+    });
+    if (!chatRoom) {
+      throw new NotFoundException('채팅방을 찾을 수 없습니다.');
+    }
+
+    const userChatRoom = await this.userChatRoomRepository.findOne({
+      where: { chatRoom: { id: chatRoomId }, user: { id: userId } },
+    });
+    if (!userChatRoom) {
+      throw new NotFoundException(
+        '해당 유저는 이 채팅방에 참여하지 않았습니다.',
+      );
+    }
+
+    await this.userChatRoomRepository.remove(userChatRoom);
+
+    chatRoom.member_count -= 1;
+    await this.chatRoomRepository.save(chatRoom);
   }
 }

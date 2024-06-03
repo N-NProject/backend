@@ -1,9 +1,10 @@
-import { Body, Controller, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Post, Query } from '@nestjs/common';
 import { ChatRoomService } from './chat-room.service';
 import { ChatRoom } from './entities/chat-room.entity';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { BoardIdDto } from './dto/board-id.dto';
 import { UserIdDto } from './dto/user-id.dto';
+import { ChatRoomIdDto } from './dto/chat-room-id.dto';
 
 @Controller('api/v1/chatrooms')
 export class ChatRoomController {
@@ -23,5 +24,16 @@ export class ChatRoomController {
       createChatRoomDto,
     );
     return this.chatRoomService.joinChatRoom(chatRoom.id, userIdDto.userId);
+  }
+
+  @Delete(':chatRoomId/leave')
+  async leaveChatRoom(
+    @Param() chatRoomIdDto: ChatRoomIdDto,
+    @Query() userIdDto: UserIdDto,
+  ): Promise<void> {
+    return this.chatRoomService.leaveChatRoom(
+      chatRoomIdDto.chatRoomId,
+      userIdDto.userId,
+    );
   }
 }
