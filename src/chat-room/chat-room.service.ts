@@ -8,7 +8,6 @@ import { Repository } from 'typeorm';
 import { Board } from '../board/entities/board.entity';
 import { ChatRoom } from './entities/chat-room.entity';
 import { UserChatRoom } from '../user-chat-room/entities/user-chat-room.entity';
-import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { User } from '../user/entities/user.entity';
 
 @Injectable()
@@ -24,10 +23,7 @@ export class ChatRoomService {
     private userRepository: Repository<User>,
   ) {}
 
-  async findOrCreateChatRoom(
-    boardId: number,
-    createChatRoomDto: CreateChatRoomDto,
-  ): Promise<ChatRoom> {
+  async findOrCreateChatRoom(boardId: number): Promise<ChatRoom> {
     const board = await this.boardRepository.findOne({
       where: { id: boardId },
       relations: ['chat_room', 'user'],
@@ -42,7 +38,7 @@ export class ChatRoomService {
       chatRoom = this.chatRoomRepository.create({
         chat_name: `${boardId}번 게시물의 채팅방`,
         member_count: 1, // 게시글 작성자는 자동으로 참여
-        max_member_count: createChatRoomDto.maxMember,
+        max_member_count: board.max_capacity, // 게시글의 최대 인원을 채팅방 최대 인원으로 설정
       });
       chatRoom = await this.chatRoomRepository.save(chatRoom);
 

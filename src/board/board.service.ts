@@ -64,9 +64,7 @@ export class BoardService {
     await this.boardRepository.save(board);
 
     // 게시글 생성 후 채팅방 생성 및 작성자 추가
-    await this.chatRoomService.findOrCreateChatRoom(board.id, {
-      maxMember: max_capacity,
-    });
+    await this.chatRoomService.findOrCreateChatRoom(board.id);
 
     return board;
   }
