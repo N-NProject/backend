@@ -4,7 +4,9 @@ import { Response } from 'express';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Auth')
 @Controller('api/v1/auth')
 export class AuthController {
     readonly origin: string;

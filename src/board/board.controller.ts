@@ -6,7 +6,7 @@ import { ApiTags } from '@nestjs/swagger';
 @ApiTags('Boards')
 @Controller('api/v1/boards')
 export class BoardController {
-  constructor(private readonly boardService: BoardService) {}
+  constructor(private readonly boardService: BoardService) { }
 
   @Post()
   async create(@Body() createBoardDto: CreateBoardDto) {

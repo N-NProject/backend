@@ -40,9 +40,12 @@ export class UserService {
       createdBoards,
       joinedBoards,
     };
+      return userResponseDto;
+    }
 
-    return userResponseDto;
-  }
+    async findOne(id: number): Promise<User> {
+      return this.userRepository.findOneOrFail({ where: { id } });
+    }
 
   async findOne(id: number): Promise<User> {
     return this.userRepository.findOneOrFail({ where: { id } });
