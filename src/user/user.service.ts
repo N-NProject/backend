@@ -31,8 +31,8 @@ export class UserService {
             throw new NotFoundException(`Can't find Board with id ${id}`);
         }
 
-        const createdBoards = user.boards.filter(board => board.user.id === id);
-        const joinedBoards = user.boards.filter(board => board.user.id !== id);
+        const createdBoards = user.boards;
+        const joinedBoards = [];
 
         const userResponseDto: UserResponseDto = {
             username: user.username,
@@ -43,7 +43,7 @@ export class UserService {
 
         return userResponseDto;
     }
-  
+
     async findOne(id: number): Promise<User> {
         return this.userRepository.findOneOrFail({ where: { id } });
     }

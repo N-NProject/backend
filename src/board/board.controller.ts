@@ -6,7 +6,7 @@ import { ApiTags } from '@nestjs/swagger';
 @ApiTags('Boards')
 @Controller('api/v1/boards')
 export class BoardController {
-  constructor(private readonly boardService: BoardService) {}
+  constructor(private readonly boardService: BoardService) { }
 
   @Post()
   async create(@Body() createBoardDto: CreateBoardDto) {
@@ -29,9 +29,9 @@ export class BoardController {
         longitude: board.location.longitude,
         location_name: board.location.location_name,
       },
-      created_at: board.created_at,
-      updated_at: board.updated_at,
-      deleted_at: board.deleted_at,
+      created_at: board.createdAt,
+      updated_at: board.updatedAt,
+      deleted_at: board.deletedAt,
     };
   }
 }
