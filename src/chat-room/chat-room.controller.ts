@@ -26,7 +26,7 @@ export class ChatRoomController {
   @UseGuards(AuthGuard)
   @HttpCode(200)
   async accessChatRoom(
-    @Token('id') id: number,
+    @Token('sub') id: number,
     @Query() boardIdDto: BoardIdDto,
   ) {
     const chatRoom = await this.chatRoomService.findOrCreateChatRoom(
@@ -42,7 +42,7 @@ export class ChatRoomController {
   @UseGuards(AuthGuard)
   @HttpCode(204)
   async leaveChatRoom(
-    @Token('id') id: number,
+    @Token('sub') id: number,
     @Param() chatRoomIdDto: ChatRoomIdDto,
   ): Promise<void> {
     return this.chatRoomService.leaveChatRoom(chatRoomIdDto.chatRoomId, id);
