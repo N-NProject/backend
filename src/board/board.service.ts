@@ -5,6 +5,7 @@ import { Board } from './entities/board.entity';
 import { CreateBoardDto } from './dto/create-board';
 import { UserService } from '../user/user.service';
 import { LocationService } from '../location/location.service';
+import { ChatRoomService } from '../chat-room/chat-room.service';
 
 @Injectable()
 export class BoardService {
@@ -13,6 +14,7 @@ export class BoardService {
     private readonly boardRepository: Repository<Board>,
     private readonly userService: UserService,
     private readonly locationService: LocationService,
+    private readonly chatRoomService: ChatRoomService,
   ) {}
 
   async createBoard(createBoardDto: CreateBoardDto): Promise<Board> {
@@ -60,6 +62,10 @@ export class BoardService {
     });
 
     await this.boardRepository.save(board);
+
+    // 게시글 생성 후 채팅방 생성 및 작성자 추가
+    await this.chatRoomService.findOrCreateChatRoom(board.id);
+
     return board;
   }
 }

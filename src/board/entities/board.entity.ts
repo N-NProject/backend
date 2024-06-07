@@ -1,15 +1,16 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
+  Entity,
   JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../user/entities/user.entity';
 import { Timestamp } from '../../global/common/timeStamp';
 import { Location } from '../../location/entities/location.entity';
 import { Category } from '../../global/enums/category.enum';
+import { ChatRoom } from '../../chat-room/entities/chat-room.entity';
 
 @Entity('board')
 export class Board extends Timestamp {
@@ -50,4 +51,9 @@ export class Board extends Timestamp {
   @Column({ type: 'date', nullable: false })
   @ApiProperty({ description: '날짜', nullable: false })
   date: string;
+
+  @ManyToOne(() => ChatRoom, (chat_room) => chat_room.boards)
+  @JoinColumn({ name: 'chat_room_id' })
+  @ApiProperty({ description: '채팅방' })
+  chat_room: ChatRoom;
 }

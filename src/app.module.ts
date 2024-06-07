@@ -10,6 +10,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { LocationService } from './location/location.service';
 import { LocationModule } from './location/location.module';
+import { ChatRoomModule } from './chat-room/chat-room.module';
 
 const envFilePath: string = getEnvPath('./');
 
@@ -26,6 +27,7 @@ const envFilePath: string = getEnvPath('./');
     UserModule,
     AuthModule,
     LocationModule,
+    ChatRoomModule,
   ],
   controllers: [AppController],
   providers: [AppService],
