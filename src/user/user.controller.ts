@@ -21,7 +21,7 @@ export class UserController {
 
   @Get()
   @UseGuards(AuthGuard)
-  getUser(@Token('id') id: number): Promise<UserResponseDto> {
+  getUser(@Token('sub') id: number): Promise<UserResponseDto> {
     return this.userService.getUserById(id);
   }
 
@@ -29,7 +29,7 @@ export class UserController {
   @HttpCode(204)
   @UseGuards(AuthGuard)
   updateUser(
-    @Token('id') id: number,
+    @Token('sub') id: number,
     @Body(ValidationPipe) userDto: UserDto,
   ): void {
     this.userService.updateUser(id, userDto);
