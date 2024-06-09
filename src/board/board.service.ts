@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Board } from './entities/board.entity';
 import { CreateBoardDto } from './dto/create-board';
+import { UpdateBoardDto } from './dto/update-board';
 import { UserService } from '../user/user.service';
 import { LocationService } from '../location/location.service';
 import { ChatRoomService } from '../chat-room/chat-room.service';
@@ -31,13 +32,11 @@ export class BoardService {
       start_time,
     } = createBoardDto;
 
-    // 먼저 주어진 좌표로 위치를 검색합니다.
     let newLocation = await this.locationService.findLocationByCoordinates(
       location.latitude,
       location.longitude,
     );
 
-    // 해당 좌표에 위치가 없으면 새로운 위치를 생성합니다.
     if (!newLocation) {
       newLocation = await this.locationService.createLocation({
         latitude: location.latitude,
@@ -45,7 +44,6 @@ export class BoardService {
         location_name,
       });
     } else {
-      // 기존 위치에 location_name을 업데이트합니다.
       newLocation.location_name = location_name;
       await this.locationService.updateLocation(newLocation);
     }
@@ -62,10 +60,47 @@ export class BoardService {
     });
 
     await this.boardRepository.save(board);
-
-    // 게시글 생성 후 채팅방 생성 및 작성자 추가
     await this.chatRoomService.findOrCreateChatRoom(board.id);
 
     return board;
+  }
+
+  async findAll(): Promise<Board[]> {
+    return this.boardRepository.find({ relations: ['user', 'location'] });
+  }
+
+  async findOne(id: number): Promise<Board> {
+    const board = await this.boardRepository.findOne({
+      where: { id },
+      relations: ['user', 'location'],
+    });
+    if (!board) {
+      throw new NotFoundException(`Board with ID ${id} not found`);
+    }
+    return board;
+  }
+
+  async updateBoard(
+    id: number,
+    updateBoardDto: UpdateBoardDto,
+  ): Promise<Board> {
+    const board = await this.findOne(id);
+
+    const updatedLocation = await this.locationService.updateLocation({
+      ...board.location,
+      ...updateBoardDto.location,
+      location_name: updateBoardDto.location_name,
+    });
+
+    const updatedBoard = this.boardRepository.merge(board, updateBoardDto, {
+      location: updatedLocation,
+    });
+
+    return this.boardRepository.save(updatedBoard);
+  }
+
+  async removeBoard(id: number): Promise<void> {
+    const board = await this.findOne(id);
+    await this.boardRepository.remove(board);
   }
 }

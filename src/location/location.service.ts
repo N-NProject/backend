@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Location } from './entities/location.entity';
@@ -24,7 +24,18 @@ export class LocationService {
     return this.locationRepository.findOne({ where: { latitude, longitude } });
   }
 
-  async updateLocation(location: Location): Promise<Location> {
-    return this.locationRepository.save(location);
+  async updateLocation(location: Partial<Location>): Promise<Location> {
+    const existingLocation = await this.locationRepository.findOne({
+      where: { id: location.id },
+    });
+    if (!existingLocation) {
+      throw new NotFoundException(`Location with ID ${location.id} not found`);
+    }
+
+    const updatedLocation = this.locationRepository.merge(
+      existingLocation,
+      location,
+    );
+    return this.locationRepository.save(updatedLocation);
   }
 }
