@@ -67,23 +67,43 @@ export class BoardService {
     id: number,
     updateBoardDto: UpdateBoardDto,
   ): Promise<BoardResponseDto> {
-    const board = await this.boardRepository.findOne({ where: { id } });
+    const board = await this.boardRepository.findOne({
+      where: { id },
+      relations: ['user', 'location'],
+    });
 
     if (!board) {
       throw new NotFoundException(`Board with ID ${id} not found`);
     }
 
-    const updatedLocation = await this.locationService.updateLocation({
-      ...board.location,
-      ...updateBoardDto.location,
-      location_name: updateBoardDto.location_name,
-    });
+    // Update user if userId is provided in the DTO
+    if (updateBoardDto.userId && updateBoardDto.userId !== board.user.id) {
+      const user = await this.userService.findOne(updateBoardDto.userId);
+      if (!user) {
+        throw new NotFoundException(
+          `User with ID ${updateBoardDto.userId} not found`,
+        );
+      }
+      board.user = user;
+    }
 
-    const updatedBoard = this.boardRepository.merge(board, updateBoardDto, {
+    // Update location if provided in the DTO
+    const updatedLocation = updateBoardDto.location
+      ? await this.locationService.updateLocation({
+          ...board.location,
+          ...updateBoardDto.location,
+          location_name: updateBoardDto.location_name,
+        })
+      : board.location;
+
+    // Merge the rest of the DTO with the existing board
+    const updatedBoard = this.boardRepository.merge(board, {
+      ...updateBoardDto,
       location: updatedLocation,
     });
 
     const savedBoard = await this.boardRepository.save(updatedBoard);
+
     return this.toBoardResponseDto(savedBoard);
   }
 

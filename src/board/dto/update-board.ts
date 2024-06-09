@@ -1,16 +1,23 @@
-import { IsOptional, IsEnum, IsInt, IsString, IsObject } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsInt,
+  IsString,
+  IsObject,
+  IsNumber,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Category } from '../../global/enums/category.enum';
 
 class LocationDto {
   @ApiProperty({ description: '위도' })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   latitude?: number;
 
   @ApiProperty({ description: '경도' })
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   longitude?: number;
 }
 
@@ -54,4 +61,9 @@ export class UpdateBoardDto {
   @IsOptional()
   @IsString()
   start_time?: string;
+
+  @ApiProperty({ description: '유저 ID' })
+  @IsOptional()
+  @IsInt()
+  userId?: number;
 }

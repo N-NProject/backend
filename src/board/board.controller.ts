@@ -40,11 +40,11 @@ export class BoardController {
 
   @Patch(':id')
   async update(
-    @Param('id') id: number,
+    @Param('id') id: string,
     @Body() updateBoardDto: UpdateBoardDto,
   ): Promise<BoardResponseDto> {
     const updatedBoard = await this.boardService.updateBoard(
-      id,
+      Number(id),
       updateBoardDto,
     );
     return updatedBoard;
