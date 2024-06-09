@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { BoardService } from './board.service';
 import { CreateBoardDto } from './dto/create-board';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { UpdateBoardDto } from './dto/update-board';
 import { Board } from './entities/board.entity';
 
@@ -51,7 +51,20 @@ export class BoardController {
   @Delete(':id')
   async remove(@Param('id') id: number) {
     await this.boardService.removeBoard(id);
-    return { message: 'Board removed successfully' };
+    return { message: 'board가 성공적으로 삭제되었습니다.' };
+  }
+
+  @Get(':id/current-person')
+  async getCurrentPerson(@Param('id') id: number) {
+    const currentPerson = this.boardService.getCurrentCapacity(id);
+    return { currentPerson };
+  }
+
+  @Post(':id/access')
+  @ApiBody({ schema: { properties: { userId: { type: 'number' } } } })
+  async accessBoard(@Param('id') id: number, @Body('userId') userId: number) {
+    await this.boardService.userAcessBoard(id, userId);
+    return { message: '게시물에 참가자가 참여했습니다.' };
   }
 
   private formatBoardResponse(board: Board) {

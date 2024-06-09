@@ -16,5 +16,6 @@ import { ChatRoomModule } from '../chat-room/chat-room.module';
   ],
   controllers: [BoardController],
   providers: [BoardService],
+  exports: [BoardService],
 })
 export class BoardsModule {}

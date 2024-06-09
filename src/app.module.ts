@@ -11,6 +11,8 @@ import { AuthModule } from './auth/auth.module';
 import { LocationService } from './location/location.service';
 import { LocationModule } from './location/location.module';
 import { ChatRoomModule } from './chat-room/chat-room.module';
+import { SseController } from './sse/sse.controller';
+import { SseModule } from './sse/sse.module';
 
 const envFilePath: string = getEnvPath('./');
 
@@ -28,8 +30,9 @@ const envFilePath: string = getEnvPath('./');
     AuthModule,
     LocationModule,
     ChatRoomModule,
+    SseModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, SseController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
