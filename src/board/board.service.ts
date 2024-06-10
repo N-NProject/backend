@@ -160,6 +160,7 @@ export class BoardService {
     sseResponse.currentPerson = this.currentCapacity[boardId];
     sseResponse.userId = user.id;
 
+    this.logger.log(`SSE 이벤트 전송: ${JSON.stringify(sseResponse)}`);
     this.boardUpdates[boardId].next(sseResponse);
   }
 
@@ -194,6 +195,7 @@ export class BoardService {
     sseResponse.currentPerson = this.currentCapacity[boardId];
     sseResponse.userId = user.id;
 
+    this.logger.log(`SSE 이벤트 전송: ${JSON.stringify(sseResponse)}`);
     this.boardUpdates[boardId].next(sseResponse); // 알림 전송
   }
 
