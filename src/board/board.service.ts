@@ -163,6 +163,40 @@ export class BoardService {
     this.boardUpdates[boardId].next(sseResponse);
   }
 
+  async userLeaveBoard(boardId: number, userId: number) {
+    const board = await this.boardRepository.findOne({
+      where: { id: boardId },
+    });
+    const user = await this.userService.findOne(userId);
+
+    if (!board) {
+      throw new NotFoundException(`board ${boardId}를 찾을 수 없습니다`);
+    }
+
+    if (!this.getBoardUpdates[boardId]) {
+      this.boardUpdates[boardId] = new Subject<SseResponseDto>();
+    }
+
+    if (!this.currentCapacity[boardId]) {
+      this.currentCapacity[boardId] = 0;
+    }
+    if (this.currentCapacity[boardId] > 0) {
+      this.currentCapacity[boardId] -= 1;
+    } else {
+      this.currentCapacity[boardId] = 0;
+    }
+
+    this.logger.log(
+      `User ${userId}가 board ${boardId}에서 나갔습니다. 현재 인원 : ${this.currentCapacity[boardId]}`,
+    );
+
+    const sseResponse = new SseResponseDto();
+    sseResponse.currentPerson = this.currentCapacity[boardId];
+    sseResponse.userId = user.id;
+
+    this.boardUpdates[boardId].next(sseResponse); // 알림 전송
+  }
+
   private toBoardResponseDto(board: Board): BoardResponseDto {
     const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSED';
 
@@ -170,6 +204,7 @@ export class BoardService {
       id: board.id,
       title: board.title,
       max_capacity: board.max_capacity,
+      currentPerson: this.currentCapacity[board.id] || 0,
       description: board.description,
       start_time: board.start_time,
       date: board.date,

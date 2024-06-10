@@ -12,6 +12,8 @@ import { CreateBoardDto } from './dto/create-board';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { UpdateBoardDto } from './dto/update-board';
 import { BoardResponseDto } from './dto/board-response.dto';
+import * as process from 'process';
+import { promises } from 'fs';
 
 @ApiTags('Boards')
 @Controller('api/v1/boards')
@@ -72,5 +74,15 @@ export class BoardController {
   ): Promise<{ message: string }> {
     await this.boardService.userAcessBoard(id, userId);
     return { message: '게시물에 참가자가 참여했습니다.' };
+  }
+
+  @Post(':id/leave')
+  @ApiBody({ schema: { properties: { userId: { type: 'number' } } } })
+  async leaveBaord(
+    @Param('id') id: number,
+    @Body('userId') userId: number,
+  ): Promise<{ messgae: string }> {
+    await this.boardService.userLeaveBoard(id, userId);
+    return { messgae: '게시물에서 참가자가 나갔습니다' };
   }
 }

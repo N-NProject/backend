@@ -47,4 +47,7 @@ export class BoardResponseDto {
 
   @ApiProperty()
   status: string;
+
+  @ApiProperty()
+  currentPerson: number;
 }
