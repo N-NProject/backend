@@ -5,6 +5,8 @@ import {
   IsString,
   IsObject,
   IsNumber,
+  Max,
+  Min,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Category } from '../../global/enums/category.enum';
@@ -13,11 +15,15 @@ class LocationDto {
   @ApiProperty({ description: '위도' })
   @IsOptional()
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   latitude?: number;
 
   @ApiProperty({ description: '경도' })
   @IsOptional()
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   longitude?: number;
 }
 

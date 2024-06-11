@@ -1,10 +1,35 @@
-import { IsNotEmpty, IsEnum, IsInt, IsString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsEnum,
+  IsInt,
+  IsString,
+  IsNumber,
+  Max,
+  Min,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Category } from '../../global/enums/category.enum';
+
+class LocationDto {
+  @ApiProperty({ description: '위도' })
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  readonly latitude: number;
+
+  @ApiProperty({ description: '경도' })
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  readonly longitude: number;
+}
 
 export class CreateBoardDto {
   @ApiProperty({ description: '게시물을 작성하는 사용자 ID' })
   @IsNotEmpty()
+  @IsInt()
   readonly user_id: number;
 
   @ApiProperty({ description: '게시물의 제목' })
@@ -24,10 +49,7 @@ export class CreateBoardDto {
 
   @ApiProperty({ description: '위치 좌표' })
   @IsNotEmpty()
-  readonly location: {
-    latitude: number;
-    longitude: number;
-  };
+  readonly location: LocationDto;
 
   @ApiProperty({ description: '위치 이름' })
   @IsNotEmpty()

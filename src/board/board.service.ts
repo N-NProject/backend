@@ -139,6 +139,11 @@ export class BoardService {
       throw new NotFoundException(`Board with ID ${boardId} not found`);
     }
 
+    const boardStatus = this.getBoardStatus(board.date);
+    if (boardStatus !== 'OPEN') {
+      throw new Error(`board가 OPEN 상태가 아닙니다`);
+    }
+
     if (!this.boardUpdates[boardId]) {
       this.boardUpdates[boardId] = new Subject<SseResponseDto>();
     }
@@ -216,6 +221,12 @@ export class BoardService {
 
     this.logger.log(`SSE 이벤트 전송: ${JSON.stringify(sseResponse)}`);
     this.boardUpdates[boardId].next(sseResponse);
+  }
+
+  private getBoardStatus(boardDate: string): string {
+    const now = new Date();
+    const date = new Date(boardDate);
+    return date > now ? 'OPEN' : 'CLOSED';
   }
 
   private toBoardResponseDto(board: Board): BoardResponseDto {

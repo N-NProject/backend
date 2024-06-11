@@ -1,5 +1,27 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+class UserDto {
+  @ApiProperty()
+  user_id: number;
+
+  @ApiProperty()
+  username: string;
+}
+
+class LocationDto {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  latitude: number;
+
+  @ApiProperty()
+  longitude: number;
+
+  @ApiProperty()
+  location_name: string;
+}
+
 export class BoardResponseDto {
   @ApiProperty()
   id: number;
@@ -23,18 +45,10 @@ export class BoardResponseDto {
   category: string;
 
   @ApiProperty()
-  user: {
-    user_id: number;
-    username: string;
-  };
+  user: UserDto;
 
   @ApiProperty()
-  location: {
-    id: number;
-    latitude: number;
-    longitude: number;
-    location_name: string;
-  };
+  location: LocationDto;
 
   @ApiProperty()
   created_at: Date;
