@@ -17,6 +17,7 @@ export class BoardService {
   private readonly logger = new Logger(BoardService.name);
   private boardUpdates: { [key: number]: Subject<any> } = {};
   private currentCapacity: { [key: number]: number } = {};
+  private participants: { [key: number]: Set<number> } = {};
 
   constructor(
     @InjectRepository(Board)
@@ -146,11 +147,16 @@ export class BoardService {
       this.currentCapacity[boardId] = 0;
     }
 
+    if (!this.participants[boardId]) {
+      this.participants[boardId] = new Set<number>();
+    }
+
     if (this.currentCapacity[boardId] >= board.max_capacity) {
       throw new Error('제한 인원이 다 찼습니다');
     }
 
     this.currentCapacity[boardId] += 1;
+    this.participants[boardId].add(userId);
 
     this.logger.log(
       `user ${userId}가 board ${boardId}에 접근했습니다. 현재 인원: ${this.currentCapacity[boardId]}`,
@@ -174,13 +180,26 @@ export class BoardService {
       throw new NotFoundException(`board ${boardId}를 찾을 수 없습니다`);
     }
 
-    if (!this.getBoardUpdates[boardId]) {
+    if (!this.boardUpdates[boardId]) {
       this.boardUpdates[boardId] = new Subject<SseResponseDto>();
     }
 
     if (!this.currentCapacity[boardId]) {
       this.currentCapacity[boardId] = 0;
     }
+
+    if (!this.participants[boardId]) {
+      this.participants[boardId] = new Set<number>();
+    }
+
+    if (!this.participants[boardId].has(userId)) {
+      throw new Error(
+        `User ${userId}는 board ${boardId}에 참가하지 않았습니다`,
+      );
+    }
+
+    this.participants[boardId].delete(userId);
+
     if (this.currentCapacity[boardId] > 0) {
       this.currentCapacity[boardId] -= 1;
     } else {
@@ -196,7 +215,7 @@ export class BoardService {
     sseResponse.userId = user.id;
 
     this.logger.log(`SSE 이벤트 전송: ${JSON.stringify(sseResponse)}`);
-    this.boardUpdates[boardId].next(sseResponse); // 알림 전송
+    this.boardUpdates[boardId].next(sseResponse);
   }
 
   private toBoardResponseDto(board: Board): BoardResponseDto {
