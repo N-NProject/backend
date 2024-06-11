@@ -81,8 +81,8 @@ export class BoardController {
   async leaveBaord(
     @Param('id') id: number,
     @Body('userId') userId: number,
-  ): Promise<{ messgae: string }> {
+  ): Promise<{ message: string }> {
     await this.boardService.userLeaveBoard(id, userId);
-    return { messgae: '게시물에서 참가자가 나갔습니다' };
+    return { message: '게시물에서 참가자가 나갔습니다' };
   }
 }
