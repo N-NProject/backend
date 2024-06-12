@@ -8,9 +8,8 @@ import { UserChatRoom } from '../user-chat-room/entities/user-chat-room.entity';
 import { User } from '../user/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ChatRoom, User, Board, UserChatRoom])],
+  imports: [TypeOrmModule.forFeature([ChatRoom, UserChatRoom, Board, User])],
   providers: [ChatRoomService],
-  controllers: [ChatRoomController],
-  exports: [ChatRoomService],
+  exports: [ChatRoomService, TypeOrmModule],
 })
 export class ChatRoomModule {}
