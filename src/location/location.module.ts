@@ -8,6 +8,6 @@ import { LocationController } from './location.controller';
   imports: [TypeOrmModule.forFeature([Location])],
   controllers: [LocationController],
   providers: [LocationService],
-  exports: [LocationService],
+  exports: [LocationService, TypeOrmModule],
 })
 export class LocationModule {}

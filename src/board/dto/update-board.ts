@@ -1,8 +1,9 @@
 import {
-  IsNotEmpty,
+  IsOptional,
   IsEnum,
   IsInt,
   IsString,
+  IsObject,
   IsNumber,
   Max,
   Min,
@@ -12,62 +13,63 @@ import { Category } from '../../global/enums/category.enum';
 
 class LocationDto {
   @ApiProperty({ description: '위도' })
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   @Min(-90)
   @Max(90)
-  readonly latitude: number;
+  latitude?: number;
 
   @ApiProperty({ description: '경도' })
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   @Min(-180)
   @Max(180)
-  readonly longitude: number;
+  longitude?: number;
 }
 
-export class CreateBoardDto {
-  @ApiProperty({ description: '게시물을 작성하는 사용자 ID' })
-  @IsNotEmpty()
-  @IsInt()
-  readonly user_id: number;
-
+export class UpdateBoardDto {
   @ApiProperty({ description: '게시물의 제목' })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  readonly title: string;
+  title?: string;
 
   @ApiProperty({ description: '게시물의 카테고리' })
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(Category)
-  readonly category: Category;
+  category?: Category;
 
   @ApiProperty({ description: '게시물 설명' })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  readonly description: string;
+  description?: string;
 
-  @ApiProperty({ description: '위치 좌표' })
-  @IsNotEmpty()
-  readonly location: LocationDto;
+  @ApiProperty({ description: '위치 정보' })
+  @IsOptional()
+  @IsObject()
+  location?: LocationDto;
 
   @ApiProperty({ description: '위치 이름' })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  readonly location_name: string;
+  location_name?: string;
 
   @ApiProperty({ description: '게시물 최대 참여 가능 인원' })
-  @IsNotEmpty()
+  @IsOptional()
   @IsInt()
-  readonly max_capacity: number;
+  max_capacity?: number;
 
   @ApiProperty({ description: '만나는 날짜' })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  readonly date: string;
+  date?: string;
 
   @ApiProperty({ description: '시작 시간' })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  readonly start_time: string;
+  start_time?: string;
+
+  @ApiProperty({ description: '유저 ID' })
+  @IsOptional()
+  @IsInt()
+  userId?: number;
 }
