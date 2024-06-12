@@ -1,15 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserDto } from './dto/user.dto';
 import { UserResponseDto } from './dto/user.response.dto';
+import { Board } from 'src/board/entities/board.entity';
+import { UserChatRoom } from 'src/user-chat-room/entities/user-chat-room.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(UserChatRoom)
+    private readonly userChatRoomRepository: Repository<UserChatRoom>,
+    @InjectRepository(Board)
+    private readonly boardRepository: Repository<Board>,
   ) {}
 
   async getUserByKakaoId(kakaoId: number): Promise<User> {
@@ -24,7 +30,7 @@ export class UserService {
   async getUserById(id: number): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['boards'],
+      relations: ['boards', 'userChatRooms'],
     });
 
     if (!user) {
@@ -32,7 +38,30 @@ export class UserService {
     }
 
     const createdBoards = user.boards;
-    const joinedBoards = [];
+
+    const userChatRoomIds = user.userChatRooms.map(
+      (userChatRoom) => userChatRoom.id,
+    );
+
+    const chatRooms = await this.userChatRoomRepository
+      .createQueryBuilder('ucr')
+      .select('ucr.chat_room_id')
+      .where('ucr.id IN (:...userChatRoomIds)', { userChatRoomIds })
+      .getRawMany();
+
+    const chatroomIds = chatRooms.map((chatRoom) => chatRoom.chat_room_id);
+
+    const boards = await this.boardRepository.find({
+      where: { chat_room: In(chatroomIds) },
+    });
+
+    const createdBoardIds = createdBoards.map(
+      (createdBoard) => createdBoard.id,
+    );
+
+    const joinedBoards = boards.filter(
+      (board) => !createdBoardIds.includes(board.id),
+    );
 
     const userResponseDto: UserResponseDto = {
       username: user.username,
@@ -42,6 +71,7 @@ export class UserService {
     };
     return userResponseDto;
   }
+  
   async findOne(id: number): Promise<User> {
     return this.userRepository.findOneOrFail({ where: { id } });
   }
