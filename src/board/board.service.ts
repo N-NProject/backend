@@ -38,6 +38,7 @@ export class BoardService {
       user,
       ...createBoardDto,
       location: newLocation as DeepPartial<Location>,
+      max_capacity: createBoardDto.maxCapacity,
     });
 
     const savedBoard = await this.boardRepository.save(board);
