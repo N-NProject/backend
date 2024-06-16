@@ -39,18 +39,21 @@ export class BoardController {
   }
 
   @Get()
+  @ApiBearerAuth()
   async findAll(): Promise<BoardResponseDto[]> {
     const boards = await this.boardService.findAll();
     return boards;
   }
 
   @Get(':id')
+  @ApiBearerAuth()
   async findOne(@Param('id') id: number): Promise<BoardResponseDto> {
     const board = await this.boardService.findOne(id);
     return board;
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
   async update(
     @Param('id') id: string,
     @Body() updateBoardDto: UpdateBoardDto,
@@ -63,12 +66,14 @@ export class BoardController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
   async remove(@Param('id') id: number): Promise<{ message: string }> {
     await this.boardService.removeBoard(id);
     return { message: 'board가 성공적으로 삭제되었습니다.' };
   }
 
   @Get(':id/current-person')
+  @ApiBearerAuth()
   async getCurrentPerson(
     @Param('id') id: number,
   ): Promise<{ currentPerson: number }> {
@@ -77,6 +82,7 @@ export class BoardController {
   }
 
   @Post(':id/access')
+  @ApiBearerAuth()
   @ApiBody({ schema: { properties: { userId: { type: 'number' } } } })
   async accessBoard(
     @Param('id') id: number,
@@ -87,6 +93,7 @@ export class BoardController {
   }
 
   @Post(':id/leave')
+  @ApiBearerAuth()
   @ApiBody({ schema: { properties: { userId: { type: 'number' } } } })
   async leaveBaord(
     @Param('id') id: number,
