@@ -10,7 +10,6 @@ export class SseController {
   constructor(private readonly boardService: BoardService) {}
 
   @Sse('board/:id')
-  @ApiBearerAuth()
   sse(@Param('id') id: number): Observable<MessageEvent> {
     return this.boardService.getBoardUpdates(id).pipe(
       map((data) => ({
