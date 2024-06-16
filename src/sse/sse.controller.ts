@@ -2,7 +2,7 @@ import { Controller, Param, Sse } from '@nestjs/common';
 import { BoardService } from '../board/board.service';
 import { map, Observable } from 'rxjs';
 import { MessageEvent } from './message-evnet.interface';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Sse')
 @Controller('sse')
