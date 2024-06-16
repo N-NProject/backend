@@ -1,4 +1,10 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Timestamp } from '../../global/common/timeStamp';
 import { ApiProperty } from '@nestjs/swagger';
 import { Board } from '../../board/entities/board.entity';
@@ -22,8 +28,8 @@ export class ChatRoom extends Timestamp {
   @ApiProperty({ description: '채팅방 최대 인원' })
   max_member_count: number;
 
-  @OneToMany(() => Board, (board) => board.chat_room)
-  boards: Board[];
+  @OneToOne(() => Board, (board) => board.chat_room)
+  board: Board;
 
   @OneToMany(() => UserChatRoom, (userChatRoom) => userChatRoom.chatRoom)
   userChatRooms: UserChatRoom[];
