@@ -12,8 +12,6 @@ import { CreateBoardDto } from './dto/create-board';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { UpdateBoardDto } from './dto/update-board';
 import { BoardResponseDto } from './dto/board-response.dto';
-import * as process from 'process';
-import { promises } from 'fs';
 
 @ApiTags('Boards')
 @Controller('api/v1/boards')
