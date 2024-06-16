@@ -30,7 +30,7 @@ export class CreateBoardDto {
   @ApiProperty({ description: '게시물을 작성하는 사용자 ID' })
   @IsNotEmpty()
   @IsInt()
-  readonly user_id: number;
+  readonly userId: number;
 
   @ApiProperty({ description: '게시물의 제목' })
   @IsNotEmpty()
@@ -54,12 +54,12 @@ export class CreateBoardDto {
   @ApiProperty({ description: '위치 이름' })
   @IsNotEmpty()
   @IsString()
-  readonly location_name: string;
+  readonly locationName: string;
 
   @ApiProperty({ description: '게시물 최대 참여 가능 인원' })
   @IsNotEmpty()
   @IsInt()
-  readonly max_capacity: number;
+  readonly maxCapacity: number;
 
   @ApiProperty({ description: '만나는 날짜' })
   @IsNotEmpty()
@@ -69,5 +69,5 @@ export class CreateBoardDto {
   @ApiProperty({ description: '시작 시간' })
   @IsNotEmpty()
   @IsString()
-  readonly start_time: string;
+  readonly startTime: string;
 }

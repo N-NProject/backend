@@ -6,25 +6,35 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { BoardService } from './board.service';
 import { CreateBoardDto } from './dto/create-board';
-import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { UpdateBoardDto } from './dto/update-board';
 import { BoardResponseDto } from './dto/board-response.dto';
 import * as process from 'process';
 import { promises } from 'fs';
+import { AuthGuard } from '../auth/auth.guard';
+import { Token } from '../auth/auth.decorator';
 
 @ApiTags('Boards')
 @Controller('api/v1/boards')
+@UseGuards(AuthGuard)
 export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
   @Post()
+  @ApiBearerAuth()
   async create(
     @Body() createBoardDto: CreateBoardDto,
+    @Token() token: any,
   ): Promise<BoardResponseDto> {
-    const board = await this.boardService.createBoard(createBoardDto);
+    const newBoardDto = {
+      ...createBoardDto,
+      userId: token.sub,
+    };
+    const board = await this.boardService.createBoard(newBoardDto);
     return board;
   }
 
