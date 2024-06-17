@@ -17,17 +17,20 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PagingParams } from '../global/common/type';
 import { UserChatRoomResponseDto } from './dto/user-chat-room.response.dto';
 
+
 @ApiTags('Users')
 @Controller('api/v1/users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @ApiBearerAuth()
   @Get()
   @UseGuards(AuthGuard)
   getUser(@Token('sub') id: number): Promise<UserResponseDto> {
     return this.userService.getUserById(id);
   }
 
+  @ApiBearerAuth()
   @Patch()
   @HttpCode(204)
   @UseGuards(AuthGuard)
