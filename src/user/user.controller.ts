@@ -12,19 +12,21 @@ import { UserDto } from './dto/user.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Token } from 'src/auth/auth.decorator';
 import { UserResponseDto } from './dto/user.response.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Users')
 @Controller('api/v1/users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @ApiBearerAuth()
   @Get()
   @UseGuards(AuthGuard)
   getUser(@Token('sub') id: number): Promise<UserResponseDto> {
     return this.userService.getUserById(id);
   }
 
+  @ApiBearerAuth()
   @Patch()
   @HttpCode(204)
   @UseGuards(AuthGuard)
