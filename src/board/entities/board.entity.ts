@@ -3,6 +3,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
@@ -52,8 +53,7 @@ export class Board extends Timestamp {
   @ApiProperty({ description: '날짜', nullable: false })
   date: string;
 
-  @ManyToOne(() => ChatRoom, (chat_room) => chat_room.boards)
-  @JoinColumn({ name: 'chat_room_id' })
-  @ApiProperty({ description: '채팅방' })
+  @OneToOne(() => ChatRoom, (chatRoom) => chatRoom.board)
+  @JoinColumn()
   chat_room: ChatRoom;
 }
