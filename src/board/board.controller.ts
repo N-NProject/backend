@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import { BoardService } from './board.service';
 import { CreateBoardDto } from './dto/create-board';
@@ -17,7 +18,8 @@ import * as process from 'process';
 import { promises } from 'fs';
 import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
-
+import { validate } from 'class-validator';
+import { validatePath } from '@nestjs/swagger/dist/utils/validate-path.util';
 
 @ApiTags('Boards')
 @Controller('api/v1/boards')
@@ -28,12 +30,12 @@ export class BoardController {
   @Post()
   @ApiBearerAuth()
   async create(
-    @Body() createBoardDto: CreateBoardDto,
-    @Token() token: any,
+    @Body(ValidationPipe) createBoardDto: CreateBoardDto,
+    @Token('sub') userId: number,
   ): Promise<BoardResponseDto> {
     const newBoardDto = {
       ...createBoardDto,
-      userId: token.sub,
+      userId: userId,
     };
     const board = await this.boardService.createBoard(newBoardDto);
     return board;
@@ -57,7 +59,7 @@ export class BoardController {
   @ApiBearerAuth()
   async update(
     @Param('id') id: string,
-    @Body() updateBoardDto: UpdateBoardDto,
+    @Body(ValidationPipe) updateBoardDto: UpdateBoardDto,
   ): Promise<BoardResponseDto> {
     const updatedBoard = await this.boardService.updateBoard(
       Number(id),

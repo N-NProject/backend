@@ -9,6 +9,7 @@ import { Board } from '../board/entities/board.entity';
 import { ChatRoom } from './entities/chat-room.entity';
 import { UserChatRoom } from '../user-chat-room/entities/user-chat-room.entity';
 import { User } from '../user/entities/user.entity';
+import { EventsGateway } from '../evnets/events.gateway';
 
 @Injectable()
 export class ChatRoomService {
@@ -21,6 +22,7 @@ export class ChatRoomService {
     private userChatRoomRepository: Repository<UserChatRoom>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private EventsGateWay: EventsGateway,
   ) {}
 
   async findOrCreateChatRoom(boardId: number): Promise<ChatRoom> {
@@ -73,19 +75,14 @@ export class ChatRoomService {
 
     chatRoom.member_count += 1;
     await this.addUserToChatRoom(chatRoom.id, userId);
-    return this.chatRoomRepository.save(chatRoom);
-  }
+    await this.chatRoomRepository.save(chatRoom);
 
-  private async addUserToChatRoom(chatRoomId: number, userId: number) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    const chatRoom = await this.chatRoomRepository.findOne({
-      where: { id: chatRoomId },
-    });
-    const userChatRoom = this.userChatRoomRepository.create({
-      user,
-      chatRoom,
-    });
-    await this.userChatRoomRepository.save(userChatRoom);
+    //다른 유저에게 알림
+    this.EventsGateWay.server
+      .to(chatRoomId.toString())
+      .emit('userJoined', { userId });
+
+    return chatRoom;
   }
 
   async leaveChatRoom(chatRoomId: number, userId: number): Promise<void> {
@@ -109,5 +106,21 @@ export class ChatRoomService {
 
     chatRoom.member_count -= 1;
     await this.chatRoomRepository.save(chatRoom);
+
+    this.EventsGateWay.server
+      .to(chatRoomId.toString())
+      .emit('userLeft', { userId });
+  }
+
+  private async addUserToChatRoom(chatRoomId: number, userId: number) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const chatRoom = await this.chatRoomRepository.findOne({
+      where: { id: chatRoomId },
+    });
+    const userChatRoom = this.userChatRoomRepository.create({
+      user,
+      chatRoom,
+    });
+    await this.userChatRoomRepository.save(userChatRoom);
   }
 }

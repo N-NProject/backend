@@ -18,6 +18,13 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger', app, document);
 
+  // WebSocket 어댑터 설정
+  app.useWebSocketAdapter(new IoAdapter(app));
+
+  // 전역 ValidationPipe 설정
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+
+  // 서버 시작
   await app.listen(8000);
 }
 

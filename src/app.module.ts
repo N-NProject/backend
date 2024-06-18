@@ -18,6 +18,7 @@ import { LocationModule } from './location/location.module';
 import { ChatRoomModule } from './chat-room/chat-room.module';
 import { SseController } from './sse/sse.controller';
 import { SseModule } from './sse/sse.module';
+import { EventsModule } from './evnets/evnets.module';
 
 const envFilePath: string = getEnvPath('./');
 
@@ -53,6 +54,7 @@ export class LoggerMiddleware implements NestMiddleware {
     LocationModule,
     ChatRoomModule,
     SseModule,
+    EventsModule,
   ],
   controllers: [SseController],
   providers: [],

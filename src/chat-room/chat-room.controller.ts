@@ -6,6 +6,7 @@ import {
   Post,
   Query,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import { ChatRoomService } from './chat-room.service';
 import { BoardIdDto } from './dto/board-id.dto';
@@ -16,7 +17,10 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Chat-rooms')
 @Controller('api/v1/chatrooms')
+@UseGuards(AuthGuard)
 export class ChatRoomController {
+  private readonly logger = new Logger(ChatRoomController.name);
+
   constructor(private readonly chatRoomService: ChatRoomService) {}
 
   /**
@@ -24,12 +28,14 @@ export class ChatRoomController {
    */
   @ApiBearerAuth()
   @Post('join')
-  @UseGuards(AuthGuard)
   @HttpCode(200)
   async accessChatRoom(
     @Token('sub') id: number,
     @Query() boardIdDto: BoardIdDto,
   ) {
+    this.logger.log(
+      `User ${id} is joining chat room for board ${boardIdDto.boardId}`,
+    );
     const chatRoom = await this.chatRoomService.findOrCreateChatRoom(
       boardIdDto.boardId,
     );
@@ -41,12 +47,14 @@ export class ChatRoomController {
    */
   @ApiBearerAuth()
   @Delete(':chatRoomId/leave')
-  @UseGuards(AuthGuard)
   @HttpCode(204)
   async leaveChatRoom(
     @Token('sub') id: number,
     @Param() chatRoomIdDto: ChatRoomIdDto,
   ): Promise<void> {
+    this.logger.log(
+      `User ${id} is leaving chat room ${chatRoomIdDto.chatRoomId}`,
+    );
     return this.chatRoomService.leaveChatRoom(chatRoomIdDto.chatRoomId, id);
   }
 }
