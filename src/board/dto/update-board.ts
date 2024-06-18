@@ -51,12 +51,12 @@ export class UpdateBoardDto {
   @ApiProperty({ description: '위치 이름' })
   @IsOptional()
   @IsString()
-  location_name?: string;
+  locationName?: string;
 
   @ApiProperty({ description: '게시물 최대 참여 가능 인원' })
   @IsOptional()
   @IsInt()
-  max_capacity?: number;
+  maxCapacity?: number;
 
   @ApiProperty({ description: '만나는 날짜' })
   @IsOptional()
@@ -66,7 +66,7 @@ export class UpdateBoardDto {
   @ApiProperty({ description: '시작 시간' })
   @IsOptional()
   @IsString()
-  start_time?: string;
+  startTime?: string;
 
   @ApiProperty({ description: '유저 ID' })
   @IsOptional()

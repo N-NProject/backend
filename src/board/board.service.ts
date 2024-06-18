@@ -28,16 +28,17 @@ export class BoardService {
   ) {}
 
   async createBoard(createBoardDto: CreateBoardDto): Promise<BoardResponseDto> {
-    const user = await this.userService.findOne(createBoardDto.user_id);
+    const user = await this.userService.findOne(createBoardDto.userId);
     const newLocation = await this.getOrCreateLocation(
       createBoardDto.location,
-      createBoardDto.location_name,
+      createBoardDto.locationName,
     );
 
     const board = this.boardRepository.create({
       user,
       ...createBoardDto,
       location: newLocation as DeepPartial<Location>,
+      max_capacity: createBoardDto.maxCapacity,
     });
 
     const savedBoard = await this.boardRepository.save(board);
@@ -93,7 +94,7 @@ export class BoardService {
       ? await this.locationService.updateLocation({
           ...board.location,
           ...updateBoardDto.location,
-          location_name: updateBoardDto.location_name,
+          location_name: updateBoardDto.locationName,
         })
       : board.location;
 
@@ -235,25 +236,25 @@ export class BoardService {
     return {
       id: board.id,
       title: board.title,
-      max_capacity: board.max_capacity,
+      maxCapacity: board.max_capacity,
       currentPerson: this.currentCapacity[board.id] || 0,
       description: board.description,
-      start_time: board.start_time,
+      startTime: board.start_time,
       date: board.date,
       category: board.category,
       user: {
-        user_id: board.user.id,
+        userId: board.user.id,
         username: board.user.username,
       },
       location: {
         id: board.location.id,
         latitude: board.location.latitude,
         longitude: board.location.longitude,
-        location_name: board.location.location_name,
+        locationName: board.location.location_name,
       },
-      created_at: board.createdAt,
-      updated_at: board.updatedAt,
-      deleted_at: board.deletedAt,
+      createdAt: board.createdAt,
+      updatedAt: board.updatedAt,
+      deletedAt: board.deletedAt,
       status,
     };
   }
