@@ -13,6 +13,7 @@ async function bootstrap() {
     .setDescription('YOGIJOGI API description')
     .setVersion('1.0')
     .addBearerAuth()
+    .addBearerAuth({ type: 'http', scheme: 'bearer', in: 'header' })
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger', app, document);

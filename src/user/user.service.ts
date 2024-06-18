@@ -6,6 +6,8 @@ import { UserDto } from './dto/user.dto';
 import { UserResponseDto } from './dto/user.response.dto';
 import { Board } from 'src/board/entities/board.entity';
 import { UserChatRoom } from 'src/user-chat-room/entities/user-chat-room.entity';
+import { CustomUserChatRoomRepository } from '../user-chat-room/repository/user-chat-room.repository';
+import { PagingParams } from '../global/common/type';
 
 @Injectable()
 export class UserService {
@@ -16,6 +18,7 @@ export class UserService {
     private readonly userChatRoomRepository: Repository<UserChatRoom>,
     @InjectRepository(Board)
     private readonly boardRepository: Repository<Board>,
+    private readonly customUserChatRoomRepository: CustomUserChatRoomRepository,
   ) {}
 
   async getUserByKakaoId(kakaoId: number): Promise<User> {
@@ -71,7 +74,7 @@ export class UserService {
     };
     return userResponseDto;
   }
-  
+
   async findOne(id: number): Promise<User> {
     return this.userRepository.findOneOrFail({ where: { id } });
   }
@@ -90,5 +93,48 @@ export class UserService {
 
   async deleteUser(id: number): Promise<void> {
     this.userRepository.softDelete(id);
+  }
+
+  /** 유저가 참여한 채팅방 **/
+  async getUserChatRooms(
+    userId: number,
+    pagingParams?: PagingParams,
+  ): Promise<any> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(`${userId}번 유저를 찾을 수 없습니다.`);
+    }
+
+    const paginationResult = await this.customUserChatRoomRepository.paginate(
+      userId,
+      pagingParams,
+    );
+
+    const chatRoomsWithBoards = paginationResult.data
+      .map((userChatRoom) => {
+        const chatRoom = userChatRoom.chatRoom;
+        const board = chatRoom?.board;
+        return {
+          id: chatRoom.id,
+          board: {
+            createdAt: board?.createdAt,
+            updatedAt: board?.updatedAt,
+            deletedAt: board?.deletedAt,
+            boardId: board?.id,
+            title: board?.title,
+            max_capacity: board?.max_capacity,
+            description: board?.description,
+            start_time: board?.start_time,
+            category: board?.category,
+            date: board?.date,
+          },
+        };
+      })
+      .filter((item) => item.board.boardId !== undefined); // Filter out undefined boards
+
+    return {
+      chatRooms: chatRoomsWithBoards,
+      cursor: paginationResult.cursor,
+    };
   }
 }

@@ -12,7 +12,7 @@ import { BoardIdDto } from './dto/board-id.dto';
 import { ChatRoomIdDto } from './dto/chat-room-id.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Chat-rooms')
 @Controller('api/v1/chatrooms')
@@ -22,6 +22,7 @@ export class ChatRoomController {
   /**
    * 게시글의 채팅방 접속
    */
+  @ApiBearerAuth()
   @Post('join')
   @UseGuards(AuthGuard)
   @HttpCode(200)
@@ -38,6 +39,7 @@ export class ChatRoomController {
   /**
    * 채팅방 나가기
    */
+  @ApiBearerAuth()
   @Delete(':chatRoomId/leave')
   @UseGuards(AuthGuard)
   @HttpCode(204)

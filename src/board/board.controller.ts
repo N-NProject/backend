@@ -18,6 +18,7 @@ import { promises } from 'fs';
 import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
 
+
 @ApiTags('Boards')
 @Controller('api/v1/boards')
 @UseGuards(AuthGuard)
