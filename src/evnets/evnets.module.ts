@@ -4,7 +4,7 @@ import { EventsGateway } from './events.gateway'; // EventsGateway 추가
 
 @Module({
   controllers: [EvnetsController],
-  providers: [EventsGateway], // EventsGateway 추가
+  providers: [EventsGateway],
   exports: [EventsGateway],
 })
 export class EventsModule {}

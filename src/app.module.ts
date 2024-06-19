@@ -19,6 +19,8 @@ import { ChatRoomModule } from './chat-room/chat-room.module';
 import { SseController } from './sse/sse.controller';
 import { SseModule } from './sse/sse.module';
 import { EventsModule } from './evnets/evnets.module';
+import { MessageService } from './message/message.service';
+import { MessageModule } from './message/message.module';
 
 const envFilePath: string = getEnvPath('./');
 
@@ -55,9 +57,10 @@ export class LoggerMiddleware implements NestMiddleware {
     ChatRoomModule,
     SseModule,
     EventsModule,
+    MessageModule,
   ],
   controllers: [SseController],
-  providers: [],
+  providers: [MessageService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { BoardService } from './board.service';
 import { CreateBoardDto } from './dto/create-board';
-import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UpdateBoardDto } from './dto/update-board';
 import { BoardResponseDto } from './dto/board-response.dto';
 import * as process from 'process';
@@ -29,6 +29,7 @@ export class BoardController {
 
   @Post()
   @ApiBearerAuth()
+  @ApiOperation({ summary: '새 게시물 생성' })
   async create(
     @Body(ValidationPipe) createBoardDto: CreateBoardDto,
     @Token('sub') userId: number,
@@ -38,6 +39,7 @@ export class BoardController {
 
   @Get()
   @ApiBearerAuth()
+  @ApiOperation({ summary: '모든 게시물 조회' })
   async findAll(): Promise<BoardResponseDto[]> {
     const boards = await this.boardService.findAll();
     return boards;
@@ -45,6 +47,7 @@ export class BoardController {
 
   @Get(':id')
   @ApiBearerAuth()
+  @ApiOperation({ summary: '특정 게시물 조회' })
   async findOne(@Param('id') id: number): Promise<BoardResponseDto> {
     const board = await this.boardService.findOne(id);
     return board;
@@ -52,6 +55,7 @@ export class BoardController {
 
   @Patch(':id')
   @ApiBearerAuth()
+  @ApiOperation({ summary: '게시물 업데이트' })
   async update(
     @Param('id') id: number,
     @Body(ValidationPipe) updateBoardDto: UpdateBoardDto,
@@ -62,12 +66,14 @@ export class BoardController {
 
   @Delete(':id')
   @ApiBearerAuth()
+  @ApiOperation({ summary: '게시물 삭제' })
   async remove(@Param('id') id: number): Promise<{ message: string }> {
     await this.boardService.removeBoard(id);
     return { message: 'board가 성공적으로 삭제되었습니다.' };
   }
 
   @Get(':id/current-person')
+  @ApiOperation({ summary: '현재 참여한 인원 조회' })
   @ApiBearerAuth()
   async getCurrentPerson(
     @Param('id') id: number,
@@ -77,6 +83,7 @@ export class BoardController {
   }
 
   @Post(':id/access')
+  @ApiOperation({ summary: '게시물 참여하기' })
   @ApiBearerAuth()
   @ApiBody({ schema: { properties: { userId: { type: 'number' } } } })
   async accessBoard(
@@ -88,6 +95,7 @@ export class BoardController {
   }
 
   @Post(':id/leave')
+  @ApiOperation({ summary: '게시물 떠나기' })
   @ApiBearerAuth()
   @ApiBody({ schema: { properties: { userId: { type: 'number' } } } })
   async leaveBaord(

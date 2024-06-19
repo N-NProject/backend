@@ -45,4 +45,8 @@ export class EventsGateway
   handleConnection(client: Socket, ...args: any[]) {
     this.logger.log(`클라이언트 연결됨: ${client.id}`);
   }
+
+  public log(message: string) {
+    this.logger.log(message);
+  }
 }

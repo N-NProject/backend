@@ -3,6 +3,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -56,4 +57,7 @@ export class Board extends Timestamp {
   @OneToOne(() => ChatRoom, (chatRoom) => chatRoom.board)
   @JoinColumn()
   chat_room: ChatRoom;
+
+  @OneToMany(() => ChatRoom, (chatRoom) => chatRoom.board)
+  chatRooms: ChatRoom[];
 }
