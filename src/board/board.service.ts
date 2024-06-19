@@ -27,8 +27,11 @@ export class BoardService {
     private readonly chatRoomService: ChatRoomService,
   ) {}
 
-  async createBoard(createBoardDto: CreateBoardDto): Promise<BoardResponseDto> {
-    const user = await this.userService.findOne(createBoardDto.userId);
+  async createBoard(
+    userId: number,
+    createBoardDto: CreateBoardDto,
+  ): Promise<BoardResponseDto> {
+    const user = await this.userService.findOne(userId);
     const newLocation = await this.getOrCreateLocation(
       createBoardDto.location,
       createBoardDto.locationName,
@@ -67,6 +70,7 @@ export class BoardService {
 
   async updateBoard(
     id: number,
+    userId: number,
     updateBoardDto: UpdateBoardDto,
   ): Promise<BoardResponseDto> {
     const board = await this.boardRepository.findOne({
@@ -78,13 +82,11 @@ export class BoardService {
       throw new NotFoundException(`Board with ID ${id} not found`);
     }
 
-    // Update user if userId is provided in the DTO
-    if (updateBoardDto.userId && updateBoardDto.userId !== board.user.id) {
-      const user = await this.userService.findOne(updateBoardDto.userId);
+    // Update user if userId is provided
+    if (userId && userId !== board.user.id) {
+      const user = await this.userService.findOne(userId);
       if (!user) {
-        throw new NotFoundException(
-          `User with ID ${updateBoardDto.userId} not found`,
-        );
+        throw new NotFoundException(`User with ID ${userId} not found`);
       }
       board.user = user;
     }

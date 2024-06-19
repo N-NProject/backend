@@ -33,12 +33,7 @@ export class BoardController {
     @Body(ValidationPipe) createBoardDto: CreateBoardDto,
     @Token('sub') userId: number,
   ): Promise<BoardResponseDto> {
-    const newBoardDto = {
-      ...createBoardDto,
-      userId: userId,
-    };
-    const board = await this.boardService.createBoard(newBoardDto);
-    return board;
+    return this.boardService.createBoard(userId, createBoardDto);
   }
 
   @Get()
@@ -58,14 +53,11 @@ export class BoardController {
   @Patch(':id')
   @ApiBearerAuth()
   async update(
-    @Param('id') id: string,
+    @Param('id') id: number,
     @Body(ValidationPipe) updateBoardDto: UpdateBoardDto,
+    @Token('sub') userId: number,
   ): Promise<BoardResponseDto> {
-    const updatedBoard = await this.boardService.updateBoard(
-      Number(id),
-      updateBoardDto,
-    );
-    return updatedBoard;
+    return this.boardService.updateBoard(id, userId, updateBoardDto);
   }
 
   @Delete(':id')

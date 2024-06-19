@@ -68,8 +68,8 @@ export class UpdateBoardDto {
   @IsString()
   startTime?: string;
 
-  @ApiProperty({ description: '유저 ID' })
-  @IsOptional()
-  @IsInt()
-  userId?: number;
+  // @ApiProperty({ description: '유저 ID' })
+  // @IsOptional()
+  // @IsInt()
+  // userId?: number;
 }
