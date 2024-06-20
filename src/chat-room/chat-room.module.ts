@@ -8,7 +8,7 @@ import { UserChatRoom } from '../user-chat-room/entities/user-chat-room.entity';
 import { User } from '../user/entities/user.entity';
 import { EventsModule } from '../evnets/evnets.module';
 import { MessageModule } from '../message/message.module';
-import { EventsGateway } from '../evnets/events.gateway';
+//import { EventsGateway } from '../evnets/events.gateway';
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { EventsGateway } from '../evnets/events.gateway';
     EventsModule,
   ],
   controllers: [ChatRoomController],
-  providers: [ChatRoomService, EventsGateway],
+  providers: [ChatRoomService],
   exports: [ChatRoomService, TypeOrmModule],
 })
 export class ChatRoomModule {}

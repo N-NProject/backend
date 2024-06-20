@@ -1,19 +1,22 @@
 import {
-  MessageBody,
+  WebSocketGateway,
+  WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
-  WebSocketGateway,
-  WebSocketServer,
+  MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
-import { Injectable, Logger } from '@nestjs/common';
-import { Server, Socket } from 'socket.io';
+import { Logger } from '@nestjs/common';
+import { Server, WebSocket } from 'ws';
 
-@Injectable()
-@WebSocketGateway(3000, {
-  cors: { origin: '*' },
-  transports: ['websocket'],
+@WebSocketGateway({
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
+  },
 })
 export class EventsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -23,11 +26,6 @@ export class EventsGateway
 
   constructor() {}
 
-  @SubscribeMessage('ClientToServer')
-  async handleMessage(@MessageBody() data: string) {
-    this.server.emit('ServerToClient', data);
-  }
-
   @SubscribeMessage('events')
   handleEvent(@MessageBody() data: string): string {
     this.logger.log(`이벤트 데이터: ${data}`);
@@ -35,18 +33,46 @@ export class EventsGateway
   }
 
   afterInit(server: Server) {
-    this.logger.log('WebSocket 서버 초기화');
+    this.logger.log('웹소켓 서버 초기화 ✅');
+    this.server = server;
   }
 
-  handleDisconnect(client: Socket) {
-    this.logger.log(`클라이언트 연결 해제: ${client.id}`);
+  handleDisconnect(client: WebSocket) {
+    this.logger.log(`Client Disconnected: ${client}`);
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
-    this.logger.log(`클라이언트 연결됨: ${client.id}`);
+  handleConnection(client: WebSocket, ...args: any[]) {
+    this.logger.log(`Client Connected: ${client}`);
+    client.on('message', (message: string) => {
+      this.logger.log(`Received message: ${message}`);
+      client.send(`Echo: ${message}`);
+    });
+    client.send('Welcome! 통신이 연결 되었습니다 :)');
   }
 
   public log(message: string) {
     this.logger.log(message);
+  }
+
+  @SubscribeMessage('sendMessage')
+  handleMessage(
+    @MessageBody() data: { chatRoomId: number; message: string },
+    @ConnectedSocket() client: WebSocket,
+  ): void {
+    this.logger.log(`Message received: ${data.message}`);
+    this.server.clients.forEach((connectedClient) => {
+      if (
+        connectedClient !== client &&
+        connectedClient.readyState === WebSocket.OPEN
+      ) {
+        connectedClient.send(
+          JSON.stringify({
+            event: 'broadcastMessage',
+            data: data.message,
+            chatRoomId: data.chatRoomId,
+          }),
+        );
+      }
+    });
   }
 }

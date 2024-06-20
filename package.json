@@ -26,9 +26,11 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/platform-express": "^10.3.8",
     "@nestjs/platform-socket.io": "^10.3.9",
+    "@nestjs/platform-ws": "^10.3.9",
     "@nestjs/swagger": "^7.3.1",
     "@nestjs/typeorm": "^10.0.2",
     "@nestjs/websockets": "^10.3.9",
+    "add": "^2.0.6",
     "axios": "^1.6.8",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -40,7 +42,8 @@
     "socket.io": "^4.7.5",
     "swagger-ui-express": "^5.0.0",
     "typeorm": "^0.3.20",
-    "typeorm-cursor-pagination": "^0.10.1"
+    "typeorm-cursor-pagination": "^0.10.1",
+    "ws": "^8.17.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.2",

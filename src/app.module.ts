@@ -1,10 +1,10 @@
 import {
-  Injectable,
-  Logger,
-  MiddlewareConsumer,
   Module,
-  NestMiddleware,
+  MiddlewareConsumer,
   NestModule,
+  Injectable,
+  NestMiddleware,
+  Logger,
 } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { ConfigModule } from '@nestjs/config';

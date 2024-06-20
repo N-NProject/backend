@@ -56,6 +56,7 @@ export class ChatRoomController {
     @Param('chatRoomId') chatRoomId: number,
   ) {
     this.logger.log(`유저 ${id}가 채팅방 ${chatRoomId}에 메시지 조회합니다.`);
+    return this.chatRoomService.getMessages(chatRoomId);
   }
 
   //메세지 전송

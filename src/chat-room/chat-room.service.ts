@@ -83,9 +83,19 @@ export class ChatRoomService {
     await this.messageRepository.save(message);
 
     // 실시간 메시지 전송
-    this.eventsGateway.server
-      .to(chatRoomId.toString())
-      .emit('ServerToClient', message.content);
+    if (this.eventsGateway.server && this.eventsGateway.server.clients) {
+      this.eventsGateway.server.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              event: 'broadcastMessage',
+              data: message.content,
+              chatRoomId: chatRoomId,
+            }),
+          );
+        }
+      });
+    }
     this.eventsGateway.log(
       `채팅방 ${chatRoomId}에 메시지 전송: ${message.content}`,
     );
@@ -130,9 +140,19 @@ export class ChatRoomService {
     await this.chatRoomRepository.save(chatRoom);
 
     // 클라이언트에게 방 입장 알림
-    this.eventsGateway.server
-      .to(chatRoomId.toString())
-      .emit('message', `${user.username} 님이 방에 입장했습니다.`);
+    if (this.eventsGateway.server && this.eventsGateway.server.clients) {
+      this.eventsGateway.server.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              event: 'broadcastMessage',
+              data: `${user.username} 님이 방에 입장했습니다.`,
+              chatRoomId: chatRoomId,
+            }),
+          );
+        }
+      });
+    }
     this.eventsGateway.log(
       `사용자 ${user.username} 님이 방 ${chatRoomId}에 입장했습니다.`,
     );
@@ -159,9 +179,19 @@ export class ChatRoomService {
     await this.chatRoomRepository.save(chatRoom);
 
     // 클라이언트에게 방 퇴장 알림
-    this.eventsGateway.server
-      .to(chatRoomId.toString())
-      .emit('message', `사용자 ${userId} 님이 방에서 나갔습니다.`);
+    if (this.eventsGateway.server && this.eventsGateway.server.clients) {
+      this.eventsGateway.server.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              event: 'broadcastMessage',
+              data: `사용자 ${userId} 님이 방에서 나갔습니다.`,
+              chatRoomId: chatRoomId,
+            }),
+          );
+        }
+      });
+    }
     this.eventsGateway.log(
       `사용자 ${userId} 님이 방 ${chatRoomId}에서 나갔습니다.`,
     );
