@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DeepPartial } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { Board } from './entities/board.entity';
 import { CreateBoardDto } from './dto/create-board';
 import { UpdateBoardDto } from './dto/update-board';
@@ -11,6 +11,8 @@ import { Observable, Subject } from 'rxjs';
 import { BoardResponseDto } from './dto/board-response.dto';
 import { Location } from '../location/entities/location.entity';
 import { SseResponseDto } from '../sse/dto/sse-response.dto';
+import { PaginationParamsDto } from './dto/pagination-params.dto';
+import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
 
 @Injectable()
 export class BoardService {
@@ -47,11 +49,32 @@ export class BoardService {
     return this.toBoardResponseDto(savedBoard);
   }
 
-  async findAll(): Promise<BoardResponseDto[]> {
-    const boards = await this.boardRepository.find({
+  /** 게시글 전체 조회 */
+  async findAll(
+    paginationParams?: PaginationParamsDto,
+  ): Promise<PaginationBoardsResponseDto> {
+    const { page, limit } = paginationParams;
+    const skip = (page - 1) * limit;
+
+    const [boards, totalCount] = await this.boardRepository.findAndCount({
       relations: ['user', 'location'],
+      skip,
+      take: limit,
+      order: {
+        updatedAt: 'DESC',
+      },
     });
-    return boards.map((board) => this.toBoardResponseDto(board));
+
+    const totalPage = Math.ceil(totalCount / limit);
+    const data = boards.map((board) => this.toBoardResponseDto(board));
+
+    return {
+      data,
+      currentCount: data.length,
+      page,
+      limit,
+      totalPage,
+    };
   }
 
   async findOne(id: number): Promise<BoardResponseDto> {

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { BoardService } from './board.service';
@@ -13,11 +14,10 @@ import { CreateBoardDto } from './dto/create-board';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { UpdateBoardDto } from './dto/update-board';
 import { BoardResponseDto } from './dto/board-response.dto';
-import * as process from 'process';
-import { promises } from 'fs';
 import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
-
+import { PaginationParamsDto } from './dto/pagination-params.dto';
+import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
 
 @ApiTags('Boards')
 @Controller('api/v1/boards')
@@ -41,9 +41,10 @@ export class BoardController {
 
   @Get()
   @ApiBearerAuth()
-  async findAll(): Promise<BoardResponseDto[]> {
-    const boards = await this.boardService.findAll();
-    return boards;
+  async findAll(
+    @Query() paginationParams?: PaginationParamsDto,
+  ): Promise<PaginationBoardsResponseDto> {
+    return this.boardService.findAll(paginationParams);
   }
 
   @Get(':id')
