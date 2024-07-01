@@ -2,11 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { WsAdapter } from '@nestjs/platform-ws';
-import { EventsGateway } from './evnets/events.gateway';
+import { IoAdapter } from '@nestjs/platform-socket.io'; // Import the Socket.IO adapter
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule); // Express 기반의 애플리케이션 생성
 
   // Swagger 설정
   const config = new DocumentBuilder()
@@ -18,18 +19,18 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger', app, document);
 
-  // WebSocket 어댑터 설정
-  const wsApp = await NestFactory.create(AppModule);
-  wsApp.useWebSocketAdapter(new WsAdapter(wsApp));
-  wsApp.useGlobalPipes(new ValidationPipe({ transform: true }));
+  // Socket.IO 어댑터 설정
+  app.useWebSocketAdapter(new IoAdapter(app));
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
-  // 메인 서버와 WebSocket 서버 각각 시작
-  await app.listen(8000); // 메인 서버 포트
-  await wsApp.listen(3000); // WebSocket 서버 포트
+  // 정적 파일 제공 설정
+  app.useStaticAssets(join(__dirname, '..', 'public'));
+
+  // 메인 서버 시작
+  await app.listen(8000);
 
   const logger = new Logger('Bootstrap');
   logger.log('Main server running on http://localhost:8000');
-  logger.log('WebSocket server running on ws://localhost:3000');
 }
 
 bootstrap();

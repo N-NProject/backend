@@ -40,6 +40,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
     "swagger-ui-express": "^5.0.0",
     "typeorm": "^0.3.20",
     "typeorm-cursor-pagination": "^0.10.1",

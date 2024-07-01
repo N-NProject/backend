@@ -3,76 +3,119 @@ import {
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  OnGatewayInit,
   SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
-import { Server, WebSocket } from 'ws';
+import { forwardRef, Inject, Logger } from '@nestjs/common';
+import { Server, Socket } from 'socket.io';
+import { ChatRoomService } from '../chat-room/chat-room.service';
 
 @WebSocketGateway({
   cors: {
     origin: '*',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type'],
   },
 })
-export class EventsGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('EventsGateway');
 
-  constructor() {}
+  constructor(
+    @Inject(forwardRef(() => ChatRoomService))
+    private readonly chatRoomService: ChatRoomService,
+  ) {}
 
-  @SubscribeMessage('events')
-  handleEvent(@MessageBody() data: string): string {
-    this.logger.log(`이벤트 데이터: ${data}`);
-    return data;
+  handleConnection(client: Socket): void {
+    this.logger.log('Client connected: ' + client.id);
+    client.leave(client.id);
+    client.data.chatRoomId = 'room:lobby';
+    client.join('room:lobby');
   }
 
-  afterInit(server: Server) {
-    this.logger.log('웹소켓 서버 초기화 ✅');
-    this.server = server;
+  handleDisconnect(client: Socket): void {
+    const { chatRoomId } = client.data;
+    if (
+      chatRoomId !== 'room:lobby' &&
+      !this.server.sockets.adapter.rooms.get(chatRoomId)
+    ) {
+      this.chatRoomService.deleteChatRoom(parseInt(chatRoomId.split(':')[1]));
+      this.server.emit(
+        'getChatRoomList',
+        this.chatRoomService.getChatRoomList(),
+      );
+    }
+    this.logger.log('Client disconnected: ' + client.id);
   }
 
-  handleDisconnect(client: WebSocket) {
-    this.logger.log(`Client Disconnected: ${client}`);
+  broadcastMessage(event: string, message: any) {
+    this.logger.log(`Broadcasting message: ${JSON.stringify(message)}`);
+    this.server.emit(event, message);
   }
 
-  handleConnection(client: WebSocket, ...args: any[]) {
-    this.logger.log(`Client Connected: ${client}`);
-    client.on('message', (message: string) => {
-      this.logger.log(`Received message: ${message}`);
-      client.send(`Echo: ${message}`);
-    });
-    client.send('Welcome! 통신이 연결 되었습니다 :)');
-  }
-
-  public log(message: string) {
+  log(message: string) {
     this.logger.log(message);
   }
 
   @SubscribeMessage('sendMessage')
-  handleMessage(
-    @MessageBody() data: { chatRoomId: number; message: string },
-    @ConnectedSocket() client: WebSocket,
-  ): void {
-    this.logger.log(`Message received: ${data.message}`);
-    this.server.clients.forEach((connectedClient) => {
-      if (
-        connectedClient !== client &&
-        connectedClient.readyState === WebSocket.OPEN
-      ) {
-        connectedClient.send(
-          JSON.stringify({
-            event: 'broadcastMessage',
-            data: data.message,
-            chatRoomId: data.chatRoomId,
-          }),
-        );
-      }
+  async sendMessage(
+    client: Socket,
+    message: { content: string; userId: number; nickname: string },
+  ): Promise<void> {
+    const { chatRoomId } = client.data;
+    await this.chatRoomService.sendMessageToRoom(chatRoomId, {
+      id: client.id,
+      userId: message.userId,
+      nickname: message.nickname,
+      content: message.content,
     });
+  }
+
+  @SubscribeMessage('getChatRoomList')
+  getChatRoomList(client: Socket, payload: any): void {
+    client.emit('getChatRoomList', this.chatRoomService.getChatRoomList());
+  }
+
+  @SubscribeMessage('createChatRoom')
+  async createChatRoom(
+    client: Socket,
+    roomName: string,
+  ): Promise<{ chatRoomId: string; roomName: string }> {
+    if (
+      client.data.chatRoomId !== 'room:lobby' &&
+      (await this.server.sockets.adapter.rooms.get(client.data.chatRoomId))
+        .size === 1
+    ) {
+      this.chatRoomService.deleteChatRoom(client.data.chatRoomId);
+    }
+
+    await this.chatRoomService.createChatRoom(client, roomName);
+    const room = await this.chatRoomService.getChatRoom(client.data.chatRoomId);
+    return {
+      chatRoomId: client.data.chatRoomId,
+      roomName: room.chat_name,
+    };
+  }
+
+  @SubscribeMessage('enterChatRoom')
+  async enterChatRoom(
+    client: Socket,
+    chatRoomId: string,
+  ): Promise<{ chatRoomId: string; roomName: string }> {
+    if (client.rooms.has(chatRoomId)) {
+      return;
+    }
+    if (
+      client.data.chatRoomId !== 'room:lobby' &&
+      (await this.server.sockets.adapter.rooms.get(client.data.chatRoomId))
+        .size === 1
+    ) {
+      this.chatRoomService.deleteChatRoom(client.data.chatRoomId);
+    }
+    await this.chatRoomService.enterChatRoom(client, chatRoomId);
+    const room = await this.chatRoomService.getChatRoom(
+      parseInt(chatRoomId.split(':')[1]),
+    );
+    return {
+      chatRoomId: chatRoomId,
+      roomName: room.chat_name,
+    };
   }
 }

@@ -1,16 +1,18 @@
 import {
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
-  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChatRoom } from './entities/chat-room.entity';
 import { UserChatRoom } from '../user-chat-room/entities/user-chat-room.entity';
 import { User } from '../user/entities/user.entity';
-import { EventsGateway } from '../evnets/events.gateway';
 import { Message } from '../message/entities/message.entity';
 import { Board } from '../board/entities/board.entity';
+import { EventsGateway } from '../evnets/events.gateway';
+import { Socket } from 'socket.io';
 
 @Injectable()
 export class ChatRoomService {
@@ -25,6 +27,7 @@ export class ChatRoomService {
     private messageRepository: Repository<Message>,
     @InjectRepository(Board)
     private boardRepository: Repository<Board>,
+    @Inject(forwardRef(() => EventsGateway))
     private eventsGateway: EventsGateway,
   ) {}
 
@@ -42,9 +45,9 @@ export class ChatRoomService {
 
       chatRoom = this.chatRoomRepository.create({
         board: board,
-        chat_name: `보드 ${boardId} 채팅방`, // 여기서 chat_name을 사용해야 합니다.
-        member_count: 0, // 초기 멤버 수를 설정합니다.
-        max_member_count: 50, // 최대 멤버 수를 설정합니다.
+        chat_name: `보드 ${boardId} 채팅방`,
+        member_count: 0,
+        max_member_count: board.max_capacity,
       });
       await this.chatRoomRepository.save(chatRoom);
     }
@@ -62,10 +65,15 @@ export class ChatRoomService {
     return chatRoom.messages;
   }
 
+  async getUser(userId: number): Promise<User> {
+    return this.userRepository.findOne({ where: { id: userId } });
+  }
+
   async sendMessage(
     chatRoomId: number,
     userId: number,
     content: string,
+    username: string,
   ): Promise<Message> {
     const chatRoom = await this.chatRoomRepository.findOne({
       where: { id: chatRoomId },
@@ -83,24 +91,54 @@ export class ChatRoomService {
     await this.messageRepository.save(message);
 
     // 실시간 메시지 전송
-    if (this.eventsGateway.server && this.eventsGateway.server.clients) {
-      this.eventsGateway.server.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(
-            JSON.stringify({
-              event: 'broadcastMessage',
-              data: message.content,
-              chatRoomId: chatRoomId,
-            }),
-          );
-        }
-      });
-    }
+    this.eventsGateway.broadcastMessage('broadcastMessage', {
+      chatRoomId: chatRoomId,
+      message: message.content,
+      nickname: username,
+    });
+
     this.eventsGateway.log(
-      `채팅방 ${chatRoomId}에 메시지 전송: ${message.content}`,
+      `채팅방 ${chatRoomId}에 메시지 전송: ${message.content} by ${username}`,
     );
 
     return message;
+  }
+
+  async sendMessageToRoom(
+    chatRoomId: string,
+    message: { id: string; userId: number; nickname: string; content: string },
+  ): Promise<void> {
+    const chatRoomNumId = parseInt(chatRoomId.split(':')[1]);
+    const chatRoom = await this.chatRoomRepository.findOne({
+      where: { id: chatRoomNumId },
+    });
+    if (!chatRoom) {
+      throw new NotFoundException('채팅방을 찾을 수 없습니다.');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: message.userId },
+    });
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    const newMessage = this.messageRepository.create({
+      content: message.content,
+      chatRoom,
+      user,
+    });
+    await this.messageRepository.save(newMessage);
+
+    this.eventsGateway.broadcastMessage('broadcastMessage', {
+      chatRoomId,
+      content: message.content,
+      nickname: message.nickname,
+    });
+
+    this.eventsGateway.log(
+      `채팅방 ${chatRoomId}에 메시지 전송: ${message.content}`,
+    );
   }
 
   async getChatRooms(): Promise<ChatRoom[]> {
@@ -116,6 +154,29 @@ export class ChatRoomService {
       throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
     return chatRoom;
+  }
+
+  async createChatRoom(client: Socket, roomName: string): Promise<void> {
+    const chatRoom = this.chatRoomRepository.create({
+      chat_name: roomName,
+    });
+    await this.chatRoomRepository.save(chatRoom);
+    client.data.chatRoomId = `room:${chatRoom.id}`;
+    client.join(client.data.chatRoomId);
+  }
+
+  async deleteChatRoom(chatRoomId: number): Promise<void> {
+    await this.chatRoomRepository.delete(chatRoomId);
+  }
+
+  async getChatRoomList(): Promise<ChatRoom[]> {
+    return this.chatRoomRepository.find();
+  }
+
+  async enterChatRoom(client: Socket, chatRoomId: string): Promise<void> {
+    client.leave(client.data.chatRoomId);
+    client.data.chatRoomId = chatRoomId;
+    client.join(chatRoomId);
   }
 
   async joinChatRoom(chatRoomId: number, userId: number): Promise<void> {
@@ -140,19 +201,11 @@ export class ChatRoomService {
     await this.chatRoomRepository.save(chatRoom);
 
     // 클라이언트에게 방 입장 알림
-    if (this.eventsGateway.server && this.eventsGateway.server.clients) {
-      this.eventsGateway.server.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(
-            JSON.stringify({
-              event: 'broadcastMessage',
-              data: `${user.username} 님이 방에 입장했습니다.`,
-              chatRoomId: chatRoomId,
-            }),
-          );
-        }
-      });
-    }
+    this.eventsGateway.broadcastMessage('broadcastMessage', {
+      chatRoomId: `room:${chatRoomId}`,
+      content: `${user.username} 님이 방에 입장했습니다.`,
+    });
+
     this.eventsGateway.log(
       `사용자 ${user.username} 님이 방 ${chatRoomId}에 입장했습니다.`,
     );
@@ -179,19 +232,11 @@ export class ChatRoomService {
     await this.chatRoomRepository.save(chatRoom);
 
     // 클라이언트에게 방 퇴장 알림
-    if (this.eventsGateway.server && this.eventsGateway.server.clients) {
-      this.eventsGateway.server.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(
-            JSON.stringify({
-              event: 'broadcastMessage',
-              data: `사용자 ${userId} 님이 방에서 나갔습니다.`,
-              chatRoomId: chatRoomId,
-            }),
-          );
-        }
-      });
-    }
+    this.eventsGateway.broadcastMessage('broadcastMessage', {
+      chatRoomId: `room:${chatRoomId}`,
+      content: `사용자 ${userId} 님이 방에서 나갔습니다.`,
+    });
+
     this.eventsGateway.log(
       `사용자 ${userId} 님이 방 ${chatRoomId}에서 나갔습니다.`,
     );
