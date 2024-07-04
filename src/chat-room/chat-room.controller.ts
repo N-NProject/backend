@@ -46,19 +46,6 @@ export class ChatRoomController {
     return this.chatRoomService.joinChatRoom(chatRoom.id, id);
   }
 
-  //메세지 조회
-  @ApiBearerAuth()
-  @Get(':chatRoomId/messages')
-  @ApiOperation({ summary: '메세지 조회' })
-  @HttpCode(200)
-  async getMessages(
-    @Token('sub') id: number,
-    @Param('chatRoomId') chatRoomId: number,
-  ) {
-    this.logger.log(`유저 ${id}가 채팅방 ${chatRoomId}에 메시지 조회합니다.`);
-    return this.chatRoomService.getMessages(chatRoomId);
-  }
-
   //메세지 전송
   @ApiBearerAuth()
   @Post(':chatRoomId/messages')
