@@ -23,6 +23,8 @@ async function bootstrap() {
   app.useWebSocketAdapter(new IoAdapter(app));
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
+  app.enableCors();
+
   // 정적 파일 제공 설정
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
