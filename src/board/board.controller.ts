@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { BoardService } from './board.service';
 import { CreateBoardDto } from './dto/create-board';
-import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { UpdateBoardDto } from './dto/update-board';
 import { BoardResponseDto } from './dto/board-response.dto';
 import { AuthGuard } from '../auth/auth.guard';
@@ -39,6 +39,18 @@ export class BoardController {
     return board;
   }
 
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: '페이지 번호',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: '페이지 당 게시글 수',
+  })
   @Get()
   @ApiBearerAuth()
   async findAll(
