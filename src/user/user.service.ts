@@ -1,24 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
-import { In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserDto } from './dto/user.dto';
 import { UserResponseDto } from './dto/user.response.dto';
-import { Board } from 'src/board/entities/board.entity';
-import { UserChatRoom } from 'src/user-chat-room/entities/user-chat-room.entity';
 import { CustomUserChatRoomRepository } from '../user-chat-room/repository/user-chat-room.repository';
 import { PagingParams } from '../global/common/type';
+import { CustomBoardRepository } from '../board/repository/board.repository';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(UserChatRoom)
-    private readonly userChatRoomRepository: Repository<UserChatRoom>,
-    @InjectRepository(Board)
-    private readonly boardRepository: Repository<Board>,
     private readonly customUserChatRoomRepository: CustomUserChatRoomRepository,
+    private readonly customBoardRepository: CustomBoardRepository,
   ) {}
 
   async getUserByKakaoId(kakaoId: number): Promise<User> {
@@ -30,49 +26,53 @@ export class UserService {
     return this.userRepository.save(user);
   }
 
-  async getUserById(id: number): Promise<UserResponseDto> {
+  /** 유저 정보 조회(작성한 게시글 포함) */
+  async getUserById(
+    id: number,
+    createdBoardsPagingParams: PagingParams,
+    joinedBoardsPagingParams: PagingParams,
+  ): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: ['boards', 'userChatRooms'],
     });
 
     if (!user) {
-      throw new NotFoundException(`Can't find Board with id ${id}`);
+      throw new NotFoundException(`Can't find User with id ${id}`);
     }
 
-    const createdBoards = user.boards;
+    const createdBoardsPagination =
+      await this.customBoardRepository.paginateCreatedBoards(
+        id,
+        createdBoardsPagingParams,
+      );
 
     const userChatRoomIds = user.userChatRooms.map(
       (userChatRoom) => userChatRoom.id,
     );
 
-    const chatRooms = await this.userChatRoomRepository
-      .createQueryBuilder('ucr')
-      .select('ucr.chat_room_id')
-      .where('ucr.id IN (:...userChatRoomIds)', { userChatRoomIds })
-      .getRawMany();
+    const chatroomIds =
+      await this.customUserChatRoomRepository.getChatRoomIds(userChatRoomIds);
 
-    const chatroomIds = chatRooms.map((chatRoom) => chatRoom.chat_room_id);
+    const joinedBoardsPagination =
+      await this.customBoardRepository.paginateJoinedBoards(
+        id,
+        chatroomIds,
+        joinedBoardsPagingParams,
+      );
 
-    const boards = await this.boardRepository.find({
-      where: { chat_room: In(chatroomIds) },
-    });
-
-    const createdBoardIds = createdBoards.map(
-      (createdBoard) => createdBoard.id,
-    );
-
-    const joinedBoards = boards.filter(
-      (board) => !createdBoardIds.includes(board.id),
-    );
-
-    const userResponseDto: UserResponseDto = {
+    return {
       username: user.username,
       region: user.region,
-      createdBoards,
-      joinedBoards,
+      createdBoards: {
+        data: createdBoardsPagination.data,
+        cursor: createdBoardsPagination.cursor,
+      },
+      joinedBoards: {
+        data: joinedBoardsPagination.data,
+        cursor: joinedBoardsPagination.cursor,
+      },
     };
-    return userResponseDto;
   }
 
   async findOne(id: number): Promise<User> {

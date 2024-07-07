@@ -1,5 +1,6 @@
-import { BoardResponseDto } from '../../board/dto/board-response.dto';
 import { ApiProperty } from '@nestjs/swagger';
+import { Cursor } from '../../global/common/dto/cursor.dto';
+import { BoardResponseDto } from '../../board/dto/board-response.dto';
 
 class ChatRoomResponseDto {
   @ApiProperty({ example: 1 })
@@ -7,17 +8,6 @@ class ChatRoomResponseDto {
 
   @ApiProperty({ type: [BoardResponseDto] })
   readonly board: BoardResponseDto[];
-}
-
-class Cursor {
-  @ApiProperty({ example: 10 })
-  readonly count: number;
-
-  @ApiProperty({ example: 'Y3JlYXRlZEF0OjE2OTYzMTg5OTc5Mzg' })
-  readonly afterCursor: string | null;
-
-  @ApiProperty({ example: null })
-  readonly beforeCursor: string | null;
 }
 
 export class UserChatRoomResponseDto {

@@ -13,10 +13,9 @@ import { UserDto } from './dto/user.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Token } from 'src/auth/auth.decorator';
 import { UserResponseDto } from './dto/user.response.dto';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PagingParams } from '../global/common/type';
 import { UserChatRoomResponseDto } from './dto/user-chat-room.response.dto';
-
 
 @ApiTags('Users')
 @Controller('api/v1/users')
@@ -24,10 +23,54 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @ApiBearerAuth()
+  @ApiQuery({
+    name: 'createdBeforeCursor',
+    required: false,
+    type: String,
+    description: '생성한 게시물 목록의 이전 커서 값',
+  })
+  @ApiQuery({
+    name: 'createdAfterCursor',
+    required: false,
+    type: String,
+    description: '생성한 게시물 목록의 다음 커서 값',
+  })
+  @ApiQuery({
+    name: 'joinedBeforeCursor',
+    required: false,
+    type: String,
+    description: '참여한 게시물 목록의 이전 커서 값',
+  })
+  @ApiQuery({
+    name: 'joinedAfterCursor',
+    required: false,
+    type: String,
+    description: '참여한 게시물 목록의 다음 커서 값',
+  })
   @Get()
   @UseGuards(AuthGuard)
-  getUser(@Token('sub') id: number): Promise<UserResponseDto> {
-    return this.userService.getUserById(id);
+  getUser(
+    @Token('sub') id: number,
+    @Query('createdBeforeCursor') createdBeforeCursor?: string,
+    @Query('createdAfterCursor') createdAfterCursor?: string,
+    @Query('joinedBeforeCursor') joinedBeforeCursor?: string,
+    @Query('joinedAfterCursor') joinedAfterCursor?: string,
+  ): Promise<UserResponseDto> {
+    const createdBoardsPagingParams: PagingParams = {
+      beforeCursor: createdBeforeCursor,
+      afterCursor: createdAfterCursor,
+    };
+
+    const joinedBoardsPagingParams: PagingParams = {
+      beforeCursor: joinedBeforeCursor,
+      afterCursor: joinedAfterCursor,
+    };
+
+    return this.userService.getUserById(
+      id,
+      createdBoardsPagingParams,
+      joinedBoardsPagingParams,
+    );
   }
 
   @ApiBearerAuth()
@@ -42,6 +85,18 @@ export class UserController {
   }
 
   /** 유저가 참여한 채팅방 반환 */
+  @ApiQuery({
+    name: 'beforeCursor',
+    required: false,
+    type: String,
+    description: '이전 커서 값',
+  })
+  @ApiQuery({
+    name: 'afterCursor',
+    required: false,
+    type: String,
+    description: '다음 커서 값',
+  })
   @ApiBearerAuth()
   @Get('chatrooms')
   @HttpCode(200)
