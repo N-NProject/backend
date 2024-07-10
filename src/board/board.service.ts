@@ -172,7 +172,7 @@ export class BoardService {
 
     const sseResponse = new SseResponseDto();
     sseResponse.currentPerson = this.currentCapacity[boardId];
-    sseResponse.userId = user.id;
+    sseResponse.nickName = user.username;
 
     this.logger.log(`SSE 이벤트 전송: ${JSON.stringify(sseResponse)}`);
     this.boardUpdates[boardId].next(sseResponse);
@@ -220,7 +220,7 @@ export class BoardService {
 
     const sseResponse = new SseResponseDto();
     sseResponse.currentPerson = this.currentCapacity[boardId];
-    sseResponse.userId = user.id;
+    sseResponse.nickName = user.username;
 
     this.logger.log(`SSE 이벤트 전송: ${JSON.stringify(sseResponse)}`);
     this.boardUpdates[boardId].next(sseResponse);
