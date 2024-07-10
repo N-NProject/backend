@@ -42,6 +42,7 @@ export class BoardService {
       ...createBoardDto,
       location: newLocation as DeepPartial<Location>,
       max_capacity: createBoardDto.maxCapacity,
+      start_time: createBoardDto.startTime,
     });
 
     const savedBoard = await this.boardRepository.save(board);
@@ -104,6 +105,7 @@ export class BoardService {
     const updatedBoard = this.boardRepository.merge(board, {
       ...updateBoardDto,
       location: updatedLocation,
+      start_time: updateBoardDto.startTime || board.start_time,
     });
 
     const savedBoard = await this.boardRepository.save(updatedBoard);
