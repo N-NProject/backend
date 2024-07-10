@@ -46,7 +46,23 @@ export class BoardService {
     });
 
     const savedBoard = await this.boardRepository.save(board);
-    await this.chatRoomService.findOrCreateChatRoom(board.id);
+    this.logger.log(`게시판이 생성되었습니다. 게시판 ID: ${savedBoard.id}`);
+
+    const chatRoom = await this.chatRoomService.findOrCreateChatRoom(
+      savedBoard.id,
+    );
+    this.logger.log(
+      `게시판 ID: ${savedBoard.id}와 연결된 채팅방 ID: ${chatRoom.id}`,
+    );
+
+    // ChatRoom을 Board 엔티티에 설정
+    savedBoard.chat_room = chatRoom;
+    await this.boardRepository.save(savedBoard);
+
+    await this.chatRoomService.joinChatRoom(chatRoom.id, userId);
+    this.logger.log(
+      `사용자 ${userId}가 채팅방 ID: ${chatRoom.id}에 참여하였습니다`,
+    );
 
     return this.toBoardResponseDto(savedBoard);
   }

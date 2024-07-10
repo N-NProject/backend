@@ -3,7 +3,6 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -55,6 +54,6 @@ export class Board extends Timestamp {
   date: string;
 
   @OneToOne(() => ChatRoom, (chatRoom) => chatRoom.board)
-  @JoinColumn()
+  @JoinColumn({ name: 'chat_room_id' }) // JoinColumn에 명시적으로 이름을 지정
   chat_room: ChatRoom;
 }

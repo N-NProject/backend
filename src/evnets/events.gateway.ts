@@ -60,62 +60,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     message: { content: string; userId: number; nickname: string },
   ): Promise<void> {
     const { chatRoomId } = client.data;
-    await this.chatRoomService.sendMessageToRoom(chatRoomId, {
-      id: client.id,
-      userId: message.userId,
-      nickname: message.nickname,
-      content: message.content,
-    });
-  }
-
-  @SubscribeMessage('getChatRoomList')
-  getChatRoomList(client: Socket, payload: any): void {
-    client.emit('getChatRoomList', this.chatRoomService.getChatRoomList());
-  }
-
-  @SubscribeMessage('createChatRoom')
-  async createChatRoom(
-    client: Socket,
-    roomName: string,
-  ): Promise<{ chatRoomId: string; roomName: string }> {
-    if (
-      client.data.chatRoomId !== 'room:lobby' &&
-      (await this.server.sockets.adapter.rooms.get(client.data.chatRoomId))
-        .size === 1
-    ) {
-      this.chatRoomService.deleteChatRoom(client.data.chatRoomId);
-    }
-
-    await this.chatRoomService.createChatRoom(client, roomName);
-    const room = await this.chatRoomService.getChatRoom(client.data.chatRoomId);
-    return {
-      chatRoomId: client.data.chatRoomId,
-      roomName: room.chat_name,
-    };
-  }
-
-  @SubscribeMessage('enterChatRoom')
-  async enterChatRoom(
-    client: Socket,
-    chatRoomId: string,
-  ): Promise<{ chatRoomId: string; roomName: string }> {
-    if (client.rooms.has(chatRoomId)) {
-      return;
-    }
-    if (
-      client.data.chatRoomId !== 'room:lobby' &&
-      (await this.server.sockets.adapter.rooms.get(client.data.chatRoomId))
-        .size === 1
-    ) {
-      this.chatRoomService.deleteChatRoom(client.data.chatRoomId);
-    }
-    await this.chatRoomService.enterChatRoom(client, chatRoomId);
-    const room = await this.chatRoomService.getChatRoom(
-      parseInt(chatRoomId.split(':')[1]),
+    await this.chatRoomService.sendMessage(
+      chatRoomId,
+      message.userId,
+      message.content,
+      message.nickname,
     );
-    return {
-      chatRoomId: chatRoomId,
-      roomName: room.chat_name,
-    };
   }
 }
