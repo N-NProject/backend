@@ -37,20 +37,24 @@ export class BoardController {
     return this.boardService.createBoard(userId, createBoardDto);
   }
 
-  @Get()
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '모든 게시물 조회' })
-  async findAll(): Promise<BoardResponseDto[]> {
-    const boards = await this.boardService.findAll();
-    return boards;
-  }
-
   @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: '특정 게시물 조회' })
-  async findOne(@Param('id') id: number): Promise<BoardResponseDto> {
-    const board = await this.boardService.findOne(id);
-    return board;
+  async findOne(
+    @Param('id') id: number,
+    @Token('sub') userId: number,
+  ): Promise<BoardResponseDto> {
+    return this.boardService.findOne(id, userId);
+  }
+
+  @Get()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '모든 게시물 조회' })
+  async findAll(@Token('sub') userId: number): Promise<BoardResponseDto[]> {
+    const boards = await this.boardService.findAll();
+    return boards.map((board) =>
+      this.boardService.toBoardResponseDto(board, userId),
+    );
   }
 
   @Patch(':id')
