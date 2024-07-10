@@ -31,7 +31,7 @@ export class ChatRoom extends Timestamp {
   @ApiProperty({ description: '채팅방 최대 인원' })
   max_member_count: number;
 
-  @ManyToOne(() => Board, (board) => board.chatRooms, { onDelete: 'CASCADE' })
+  @OneToOne(() => Board, (board) => board.chat_room, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'boardId' })
   board: Board;
 

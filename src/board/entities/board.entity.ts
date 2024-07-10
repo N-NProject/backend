@@ -58,6 +58,7 @@ export class Board extends Timestamp {
   @JoinColumn()
   chat_room: ChatRoom;
 
-  @OneToMany(() => ChatRoom, (chatRoom) => chatRoom.board)
-  chatRooms: ChatRoom[];
+  // @OneToMany(() => ChatRoom, (chatRoom) => chatRoom.board)
+  // @JoinColumn()
+  // chatRooms: ChatRoom[];
 }
