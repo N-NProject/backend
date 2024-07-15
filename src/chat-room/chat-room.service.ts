@@ -1,58 +1,159 @@
 import {
-  ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Board } from '../board/entities/board.entity';
 import { ChatRoom } from './entities/chat-room.entity';
 import { UserChatRoom } from '../user-chat-room/entities/user-chat-room.entity';
 import { User } from '../user/entities/user.entity';
+import { Message } from '../message/entities/message.entity';
+import { Board } from '../board/entities/board.entity';
+import { EventsGateway } from '../evnets/events.gateway';
+import { Socket } from 'socket.io';
 
 @Injectable()
 export class ChatRoomService {
   constructor(
     @InjectRepository(ChatRoom)
     private chatRoomRepository: Repository<ChatRoom>,
-    @InjectRepository(Board)
-    private boardRepository: Repository<Board>,
     @InjectRepository(UserChatRoom)
     private userChatRoomRepository: Repository<UserChatRoom>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Message)
+    private messageRepository: Repository<Message>,
+    @InjectRepository(Board)
+    private boardRepository: Repository<Board>,
+    @Inject(forwardRef(() => EventsGateway))
+    private eventsGateway: EventsGateway,
   ) {}
 
   async findOrCreateChatRoom(boardId: number): Promise<ChatRoom> {
-    const board = await this.boardRepository.findOne({
-      where: { id: boardId },
-      relations: ['chat_room', 'user'],
+    let chatRoom = await this.chatRoomRepository.findOne({
+      where: { board: { id: boardId } },
+      relations: ['board'],
     });
-    if (!board) {
-      throw new NotFoundException('게시글을 찾을 수 없습니다.');
-    }
-
-    let chatRoom = board.chat_room;
 
     if (!chatRoom) {
+      const board = await this.boardRepository.findOne({
+        where: { id: boardId },
+      });
+      if (!board) {
+        throw new NotFoundException('Board not found');
+      }
+
       chatRoom = this.chatRoomRepository.create({
-        chat_name: `${boardId}번 게시물의 채팅방`,
-        member_count: 1, // 게시글 작성자는 자동으로 참여
-        max_member_count: board.max_capacity, // 게시글의 최대 인원을 채팅방 최대 인원으로 설정
+        board: board,
+        chat_name: `보드 ${boardId} 채팅방`,
+        member_count: 0,
+        max_member_count: board.max_capacity,
       });
       chatRoom = await this.chatRoomRepository.save(chatRoom);
-
-      board.chat_room = chatRoom;
-      await this.boardRepository.save(board);
-
-      // 게시글 작성자를 채팅방에 추가
-      await this.addUserToChatRoom(chatRoom.id, board.user.id);
     }
 
     return chatRoom;
   }
 
-  async joinChatRoom(chatRoomId: number, userId: number): Promise<ChatRoom> {
+  async getMessages(chatRoomId: number): Promise<Message[]> {
+    const chatRoom = await this.chatRoomRepository.findOne({
+      where: { board: { id: chatRoomId } },
+      relations: ['messages'],
+    });
+    if (!chatRoom) {
+      throw new NotFoundException('채팅방을 찾을 수 없습니다');
+    }
+    return chatRoom.messages;
+  }
+
+  async getUser(userId: number): Promise<User> {
+    return this.userRepository.findOne({ where: { id: userId } });
+  }
+
+  async sendMessage(
+    chatRoomId: number | string,
+    userId: number,
+    content: string,
+    nickname: string,
+  ): Promise<Message> {
+    let chatRoomNumId: number;
+
+    if (typeof chatRoomId === 'string') {
+      chatRoomNumId = parseInt(chatRoomId.split(':')[1]);
+    } else {
+      chatRoomNumId = chatRoomId;
+    }
+
+    const chatRoom = await this.chatRoomRepository.findOne({
+      where: { id: chatRoomNumId },
+    });
+    if (!chatRoom) {
+      throw new NotFoundException('채팅방을 찾을 수 없습니다.');
+    }
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    const message = this.messageRepository.create({ content, chatRoom, user });
+    await this.messageRepository.save(message);
+
+    // 실시간 메시지 전송
+    this.eventsGateway.broadcastMessage('newMessage', {
+      chatRoomId: `room:${chatRoomNumId}`,
+      message: message.content,
+      nickname: nickname,
+    });
+
+    this.eventsGateway.log(
+      `채팅방 ${chatRoomNumId}에 메시지 전송: ${message.content} by ${nickname}`,
+    );
+
+    return message;
+  }
+
+  async getChatRooms(): Promise<ChatRoom[]> {
+    return this.chatRoomRepository.find();
+  }
+
+  async getChatRoom(chatRoomId: number): Promise<ChatRoom> {
+    const chatRoom = await this.chatRoomRepository.findOne({
+      where: { id: chatRoomId },
+      relations: ['messages'],
+    });
+    if (!chatRoom) {
+      throw new NotFoundException('채팅방을 찾을 수 없습니다.');
+    }
+    return chatRoom;
+  }
+
+  async createChatRoom(client: Socket, roomName: string): Promise<void> {
+    const chatRoom = this.chatRoomRepository.create({
+      chat_name: roomName,
+    });
+    await this.chatRoomRepository.save(chatRoom);
+    client.data.chatRoomId = `room:${chatRoom.id}`;
+    client.join(client.data.chatRoomId);
+  }
+
+  async deleteChatRoom(chatRoomId: number): Promise<void> {
+    await this.chatRoomRepository.delete(chatRoomId);
+  }
+
+  async getChatRoomList(): Promise<ChatRoom[]> {
+    return this.chatRoomRepository.find();
+  }
+
+  async enterChatRoom(client: Socket, chatRoomId: string): Promise<void> {
+    client.leave(client.data.chatRoomId);
+    client.data.chatRoomId = chatRoomId;
+    client.join(chatRoomId);
+  }
+
+  async joinChatRoom(chatRoomId: number, userId: number): Promise<void> {
     const chatRoom = await this.chatRoomRepository.findOne({
       where: { id: chatRoomId },
     });
@@ -60,32 +161,18 @@ export class ChatRoomService {
       throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
 
-    const existingEntry = await this.userChatRoomRepository.findOne({
-      where: { chatRoom: { id: chatRoomId }, user: { id: userId } },
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
     });
-    if (existingEntry) {
-      throw new ConflictException('이미 채팅방에 참여한 유저입니다');
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
 
-    if (chatRoom.member_count >= chatRoom.max_member_count) {
-      throw new ConflictException('채팅방이 가득 찼습니다');
-    }
+    const userChatRoom = this.userChatRoomRepository.create({ user, chatRoom });
+    await this.userChatRoomRepository.save(userChatRoom);
 
     chatRoom.member_count += 1;
-    await this.addUserToChatRoom(chatRoom.id, userId);
-    return this.chatRoomRepository.save(chatRoom);
-  }
-
-  private async addUserToChatRoom(chatRoomId: number, userId: number) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    const chatRoom = await this.chatRoomRepository.findOne({
-      where: { id: chatRoomId },
-    });
-    const userChatRoom = this.userChatRoomRepository.create({
-      user,
-      chatRoom,
-    });
-    await this.userChatRoomRepository.save(userChatRoom);
+    await this.chatRoomRepository.save(chatRoom);
   }
 
   async leaveChatRoom(chatRoomId: number, userId: number): Promise<void> {
@@ -99,14 +186,12 @@ export class ChatRoomService {
     const userChatRoom = await this.userChatRoomRepository.findOne({
       where: { chatRoom: { id: chatRoomId }, user: { id: userId } },
     });
+
     if (!userChatRoom) {
-      throw new NotFoundException(
-        '해당 유저는 이 채팅방에 참여하지 않았습니다.',
-      );
+      throw new NotFoundException('User not in chat room.');
     }
 
     await this.userChatRoomRepository.remove(userChatRoom);
-
     chatRoom.member_count -= 1;
     await this.chatRoomRepository.save(chatRoom);
   }

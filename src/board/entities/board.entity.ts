@@ -54,6 +54,6 @@ export class Board extends Timestamp {
   date: string;
 
   @OneToOne(() => ChatRoom, (chatRoom) => chatRoom.board)
-  @JoinColumn()
+  @JoinColumn({ name: 'chat_room_id' })
   chat_room: ChatRoom;
 }

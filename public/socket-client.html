@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Socket.IO Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        #chat {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        #messages {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        #messages li {
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .user1 {
+            background: #e1e1f1;
+        }
+        .user2 {
+            background: #f1e1e1;
+        }
+    </style>
+</head>
+<body>
+<div id="chat">
+    <ul id="messages"></ul>
+</div>
+
+<script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script>
+<script>
+    const socket = io('http://localhost:8000');
+
+    const currentUser = '곽소정';  // 현재 사용자 이름 또는 ID를 설정
+
+    socket.on('connect', () => {
+        console.log('Connected to Socket.IO server');
+    });
+
+    socket.on('broadcastMessage', (message) => {
+        console.log('Received broadcastMessage:', message);
+        const messageElement = document.createElement('li');
+        messageElement.textContent = `${message.nickname}: ${message.message}`;
+
+        // 사용자에 따라 다른 색상 부여
+        if (message.nickname === currentUser) {
+            messageElement.classList.add('user1');
+        } else {
+            messageElement.classList.add('user2');
+        }
+
+        document.getElementById('messages').appendChild(messageElement);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Disconnected from Socket.IO server');
+    });
+</script>
+</body>
+</html>
