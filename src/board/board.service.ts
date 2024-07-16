@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DeepPartial } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { Board } from './entities/board.entity';
 import { CreateBoardDto } from './dto/create-board';
 import { UpdateBoardDto } from './dto/update-board';
@@ -16,6 +16,8 @@ import { Observable, Subject } from 'rxjs';
 import { BoardResponseDto } from './dto/board-response.dto';
 import { Location } from '../location/entities/location.entity';
 import { SseResponseDto } from '../sse/dto/sse-response.dto';
+import { PaginationParamsDto } from './dto/pagination-params.dto';
+import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
 
 @Injectable()
 export class BoardService {
@@ -60,16 +62,32 @@ export class BoardService {
       `게시판 ID: ${savedBoard.id}와 연결된 채팅방 ID: ${chatRoom.id}`,
     );
 
-    // ChatRoom을 Board 엔티티에 설정
-    savedBoard.chat_room = chatRoom;
-    await this.boardRepository.save(savedBoard);
+  /** 게시글 전체 조회 */
+  async findAll(
+    paginationParams?: PaginationParamsDto,
+  ): Promise<PaginationBoardsResponseDto> {
+    const { page, limit } = paginationParams;
+    const skip = (page - 1) * limit;
 
-    await this.chatRoomService.joinChatRoom(chatRoom.id, userId);
-    this.logger.log(
-      `사용자 ${userId}가 채팅방 ID: ${chatRoom.id}에 참여하였습니다`,
-    );
+    const [boards, totalCount] = await this.boardRepository.findAndCount({
+      relations: ['user', 'location'],
+      skip,
+      take: limit,
+      order: {
+        updatedAt: 'DESC',
+      },
+    });
 
-    return this.toBoardResponseDto(savedBoard, userId);
+    const totalPage = Math.ceil(totalCount / limit);
+    const data = boards.map((board) => this.toBoardResponseDto(board));
+
+    return {
+      data,
+      currentCount: data.length,
+      page,
+      limit,
+      totalPage,
+    };
   }
 
   async findOne(id: number, userId: number): Promise<BoardResponseDto> {

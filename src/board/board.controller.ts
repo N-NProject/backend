@@ -6,18 +6,19 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
 import { BoardService } from './board.service';
 import { CreateBoardDto } from './dto/create-board';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { UpdateBoardDto } from './dto/update-board';
 import { BoardResponseDto } from './dto/board-response.dto';
-import * as process from 'process';
-import { promises } from 'fs';
 import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
+import { PaginationParamsDto } from './dto/pagination-params.dto';
+import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
 import { validate } from 'class-validator';
 import { validatePath } from '@nestjs/swagger/dist/utils/validate-path.util';
 
@@ -37,6 +38,25 @@ export class BoardController {
     return this.boardService.createBoard(userId, createBoardDto);
   }
 
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: '페이지 번호',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: '페이지 당 게시글 수',
+  })
+  @Get()
+  @ApiBearerAuth()
+  async findAll(
+    @Query() paginationParams?: PaginationParamsDto,
+  ): Promise<PaginationBoardsResponseDto> {
+    return this.boardService.findAll(paginationParams);
+
   @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: '특정 게시물 조회' })
@@ -45,6 +65,7 @@ export class BoardController {
     @Token('sub') userId: number,
   ): Promise<BoardResponseDto> {
     return this.boardService.findOne(id, userId);
+
   }
 
   @Get()

@@ -12,6 +12,16 @@ export class CustomUserChatRoomRepository {
     private readonly userChatRoomRepository: Repository<UserChatRoom>,
   ) {}
 
+  async getChatRoomIds(userChatRoomIds: number[]): Promise<number[]> {
+    const chatRooms = await this.userChatRoomRepository
+      .createQueryBuilder('ucr')
+      .select('ucr.chat_room_id')
+      .where('ucr.id IN (:...userChatRoomIds)', { userChatRoomIds })
+      .getRawMany();
+
+    return chatRooms.map((chatRoom) => chatRoom.chat_room_id);
+  }
+
   async paginate(userId: number, pagingParams?: PagingParams) {
     const queryBuilder = this.userChatRoomRepository
       .createQueryBuilder('userchatroom')

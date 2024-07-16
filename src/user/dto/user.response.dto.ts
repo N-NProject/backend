@@ -1,8 +1,19 @@
-import { Board } from "src/board/entities/board.entity";
+import { Cursor } from '../../global/common/dto/cursor.dto';
+import { Board } from '../../board/entities/board.entity';
+
+class CreateBoards {
+  data: Board[];
+  cursor: Cursor;
+}
+
+class JoinedBoards {
+  data: Board[];
+  cursor: Cursor;
+}
 
 export class UserResponseDto {
-  readonly username: string;
-  readonly region: string;
-  readonly createdBoards: Board[];
-  readonly joinedBoards: Board[];
+  username: string;
+  region: string;
+  createdBoards: CreateBoards;
+  joinedBoards: JoinedBoards;
 }
