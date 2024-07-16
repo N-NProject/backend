@@ -27,11 +27,6 @@ class LocationDto {
 }
 
 export class CreateBoardDto {
-  @ApiProperty({ description: '게시물을 작성하는 사용자 ID' })
-  @IsNotEmpty()
-  @IsInt()
-  readonly userId: number;
-
   @ApiProperty({ description: '게시물의 제목' })
   @IsNotEmpty()
   @IsString()

@@ -1,6 +1,8 @@
 import {
   Column,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -9,6 +11,7 @@ import { Timestamp } from '../../global/common/timeStamp';
 import { ApiProperty } from '@nestjs/swagger';
 import { Board } from '../../board/entities/board.entity';
 import { UserChatRoom } from '../../user-chat-room/entities/user-chat-room.entity';
+import { Message } from '../../message/entities/message.entity';
 
 @Entity('chat_room')
 export class ChatRoom extends Timestamp {
@@ -28,9 +31,13 @@ export class ChatRoom extends Timestamp {
   @ApiProperty({ description: '채팅방 최대 인원' })
   max_member_count: number;
 
-  @OneToOne(() => Board, (board) => board.chat_room)
+  @OneToOne(() => Board, (board) => board.chat_room, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'boardId' })
   board: Board;
 
   @OneToMany(() => UserChatRoom, (userChatRoom) => userChatRoom.chatRoom)
   userChatRooms: UserChatRoom[];
+
+  @OneToMany(() => Message, (message) => message.chatRoom)
+  messages: Message[];
 }

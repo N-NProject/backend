@@ -1,10 +1,10 @@
 import {
-  Injectable,
-  Logger,
-  MiddlewareConsumer,
   Module,
-  NestMiddleware,
+  MiddlewareConsumer,
   NestModule,
+  Injectable,
+  NestMiddleware,
+  Logger,
 } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { ConfigModule } from '@nestjs/config';
@@ -18,6 +18,9 @@ import { LocationModule } from './location/location.module';
 import { ChatRoomModule } from './chat-room/chat-room.module';
 import { SseController } from './sse/sse.controller';
 import { SseModule } from './sse/sse.module';
+import { EventsModule } from './evnets/evnets.module';
+import { MessageService } from './message/message.service';
+import { MessageModule } from './message/message.module';
 
 const envFilePath: string = getEnvPath('./');
 
@@ -53,9 +56,11 @@ export class LoggerMiddleware implements NestMiddleware {
     LocationModule,
     ChatRoomModule,
     SseModule,
+    EventsModule,
+    MessageModule,
   ],
   controllers: [SseController],
-  providers: [],
+  providers: [MessageService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

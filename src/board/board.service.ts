@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, Repository } from 'typeorm';
 import { Board } from './entities/board.entity';
@@ -29,8 +34,11 @@ export class BoardService {
     private readonly chatRoomService: ChatRoomService,
   ) {}
 
-  async createBoard(createBoardDto: CreateBoardDto): Promise<BoardResponseDto> {
-    const user = await this.userService.findOne(createBoardDto.userId);
+  async createBoard(
+    userId: number,
+    createBoardDto: CreateBoardDto,
+  ): Promise<BoardResponseDto> {
+    const user = await this.userService.findOne(userId);
     const newLocation = await this.getOrCreateLocation(
       createBoardDto.location,
       createBoardDto.locationName,
@@ -41,13 +49,18 @@ export class BoardService {
       ...createBoardDto,
       location: newLocation as DeepPartial<Location>,
       max_capacity: createBoardDto.maxCapacity,
+      start_time: createBoardDto.startTime,
     });
 
     const savedBoard = await this.boardRepository.save(board);
-    await this.chatRoomService.findOrCreateChatRoom(board.id);
+    this.logger.log(`게시판이 생성되었습니다. 게시판 ID: ${savedBoard.id}`);
 
-    return this.toBoardResponseDto(savedBoard);
-  }
+    const chatRoom = await this.chatRoomService.findOrCreateChatRoom(
+      savedBoard.id,
+    );
+    this.logger.log(
+      `게시판 ID: ${savedBoard.id}와 연결된 채팅방 ID: ${chatRoom.id}`,
+    );
 
   /** 게시글 전체 조회 */
   async findAll(
@@ -77,7 +90,7 @@ export class BoardService {
     };
   }
 
-  async findOne(id: number): Promise<BoardResponseDto> {
+  async findOne(id: number, userId: number): Promise<BoardResponseDto> {
     const board = await this.boardRepository.findOne({
       where: { id },
       relations: ['user', 'location'],
@@ -85,11 +98,19 @@ export class BoardService {
     if (!board) {
       throw new NotFoundException(`Board with ID ${id} not found`);
     }
-    return this.toBoardResponseDto(board);
+    return this.toBoardResponseDto(board, userId);
+  }
+
+  async findAll(): Promise<Board[]> {
+    const boards = await this.boardRepository.find({
+      relations: ['user', 'location'],
+    });
+    return boards;
   }
 
   async updateBoard(
     id: number,
+    userId: number,
     updateBoardDto: UpdateBoardDto,
   ): Promise<BoardResponseDto> {
     const board = await this.boardRepository.findOne({
@@ -98,21 +119,17 @@ export class BoardService {
     });
 
     if (!board) {
-      throw new NotFoundException(`Board with ID ${id} not found`);
+      throw new NotFoundException(`ID가 ${id}인 게시물을 찾을 수 없습니다.`);
     }
 
-    // Update user if userId is provided in the DTO
-    if (updateBoardDto.userId && updateBoardDto.userId !== board.user.id) {
-      const user = await this.userService.findOne(updateBoardDto.userId);
-      if (!user) {
-        throw new NotFoundException(
-          `User with ID ${updateBoardDto.userId} not found`,
-        );
-      }
-      board.user = user;
+    // 사용자 권한 검사
+    if (board.user.id !== userId) {
+      throw new UnauthorizedException(
+        '이 게시물을 업데이트할 권한이 없습니다.',
+      );
     }
 
-    // Update location if provided in the DTO
+    // 위치 정보 업데이트 (DTO에서 제공되었을 경우)
     const updatedLocation = updateBoardDto.location
       ? await this.locationService.updateLocation({
           ...board.location,
@@ -121,15 +138,18 @@ export class BoardService {
         })
       : board.location;
 
-    // Merge the rest of the DTO with the existing board
+    // DTO와 기존 게시물을 병합
     const updatedBoard = this.boardRepository.merge(board, {
       ...updateBoardDto,
       location: updatedLocation,
+      start_time: updateBoardDto.startTime || board.start_time,
     });
 
+    // 업데이트된 게시물 저장
     const savedBoard = await this.boardRepository.save(updatedBoard);
 
-    return this.toBoardResponseDto(savedBoard);
+    // 업데이트된 게시물을 응답 형식으로 변환하여 반환
+    return this.toBoardResponseDto(savedBoard, userId);
   }
 
   async removeBoard(id: number): Promise<void> {
@@ -193,7 +213,7 @@ export class BoardService {
 
     const sseResponse = new SseResponseDto();
     sseResponse.currentPerson = this.currentCapacity[boardId];
-    sseResponse.userId = user.id;
+    sseResponse.nickName = user.username;
 
     this.logger.log(`SSE 이벤트 전송: ${JSON.stringify(sseResponse)}`);
     this.boardUpdates[boardId].next(sseResponse);
@@ -241,19 +261,13 @@ export class BoardService {
 
     const sseResponse = new SseResponseDto();
     sseResponse.currentPerson = this.currentCapacity[boardId];
-    sseResponse.userId = user.id;
+    sseResponse.nickName = user.username;
 
     this.logger.log(`SSE 이벤트 전송: ${JSON.stringify(sseResponse)}`);
     this.boardUpdates[boardId].next(sseResponse);
   }
 
-  private getBoardStatus(boardDate: string): string {
-    const now = new Date();
-    const date = new Date(boardDate);
-    return date > now ? 'OPEN' : 'CLOSED';
-  }
-
-  private toBoardResponseDto(board: Board): BoardResponseDto {
+  public toBoardResponseDto(board: Board, userId: number): BoardResponseDto {
     const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSED';
 
     return {
@@ -279,7 +293,14 @@ export class BoardService {
       updatedAt: board.updatedAt,
       deletedAt: board.deletedAt,
       status,
+      editable: board.user.id === userId,
     };
+  }
+
+  private getBoardStatus(boardDate: string): string {
+    const now = new Date();
+    const date = new Date(boardDate);
+    return date > now ? 'OPEN' : 'CLOSED';
   }
 
   private async getOrCreateLocation(

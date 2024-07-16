@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Board } from '../../board/entities/board.entity';
 import { Timestamp } from '../../global/common/timestamp';
 import { UserChatRoom } from '../../user-chat-room/entities/user-chat-room.entity';
+import { Message } from '../../message/entities/message.entity';
 
 @Entity('user')
 export class User extends Timestamp {
@@ -27,4 +28,7 @@ export class User extends Timestamp {
 
   @OneToMany(() => UserChatRoom, (userChatRoom) => userChatRoom.user)
   userChatRooms: UserChatRoom[];
+
+  @OneToMany(() => Message, (message) => message.user)
+  messages: Message[];
 }
