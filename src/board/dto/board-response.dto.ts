@@ -45,7 +45,7 @@ export class BoardResponseDto {
   category: string;
 
   @ApiProperty()
-  user: UserDto;
+  user?: UserDto;
 
   @ApiProperty()
   location: LocationDto;

@@ -62,6 +62,18 @@ export class BoardService {
       `게시판 ID: ${savedBoard.id}와 연결된 채팅방 ID: ${chatRoom.id}`,
     );
 
+    // ChatRoom을 Board 엔티티에 설정
+    savedBoard.chat_room = chatRoom;
+    await this.boardRepository.save(savedBoard);
+
+    await this.chatRoomService.joinChatRoom(chatRoom.id, userId);
+    this.logger.log(
+      `사용자 ${userId}가 채팅방 ID: ${chatRoom.id}에 참여하였습니다`,
+    );
+
+    return this.toBoardResponseDto(savedBoard, userId);
+  }
+
   /** 게시글 전체 조회 */
   async findAll(
     paginationParams?: PaginationParamsDto,
@@ -99,13 +111,6 @@ export class BoardService {
       throw new NotFoundException(`Board with ID ${id} not found`);
     }
     return this.toBoardResponseDto(board, userId);
-  }
-
-  async findAll(): Promise<Board[]> {
-    const boards = await this.boardRepository.find({
-      relations: ['user', 'location'],
-    });
-    return boards;
   }
 
   async updateBoard(
@@ -267,10 +272,10 @@ export class BoardService {
     this.boardUpdates[boardId].next(sseResponse);
   }
 
-  public toBoardResponseDto(board: Board, userId: number): BoardResponseDto {
+  public toBoardResponseDto(board: Board, userId?: number): BoardResponseDto {
     const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSED';
 
-    return {
+    const response: BoardResponseDto = {
       id: board.id,
       title: board.title,
       maxCapacity: board.max_capacity,
@@ -279,10 +284,6 @@ export class BoardService {
       startTime: board.start_time,
       date: board.date,
       category: board.category,
-      user: {
-        userId: board.user.id,
-        username: board.user.username,
-      },
       location: {
         id: board.location.id,
         latitude: board.location.latitude,
@@ -295,6 +296,15 @@ export class BoardService {
       status,
       editable: board.user.id === userId,
     };
+
+    if (userId) {
+      response.user = {
+        userId: board.user.id,
+        username: board.user.username,
+      };
+    }
+
+    return response;
   }
 
   private getBoardStatus(boardDate: string): string {
