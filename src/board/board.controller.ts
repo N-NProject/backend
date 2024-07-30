@@ -7,6 +7,8 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  UnauthorizedException,
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
@@ -107,28 +109,32 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: '게시물 참여하기' })
-  @ApiBody({ schema: { properties: { userId: { type: 'number' } } } })
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Post(':id/access')
   async accessBoard(
     @Param('id') id: number,
-    @Body('userId') userId: number,
+    @Body('token') token: string,
   ): Promise<{ message: string }> {
-    await this.boardService.userAcessBoard(id, userId);
-    return { message: '게시물에 참가자가 참여했습니다.' };
+    if (!token) {
+      throw new UnauthorizedException('Token is missing');
+    }
+    await this.boardService.userAcessBoard(id, token);
+    return { message: '게시물에 참가자가 참여했습니다' };
   }
 
   @ApiOperation({ summary: '게시물 떠나기' })
-  @ApiBody({ schema: { properties: { userId: { type: 'number' } } } })
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Post(':id/leave')
-  async leaveBaord(
+  async leaveBoard(
     @Param('id') id: number,
-    @Body('userId') userId: number,
+    @Body('token') token: string,
   ): Promise<{ message: string }> {
-    await this.boardService.userLeaveBoard(id, userId);
+    if (!token) {
+      throw new UnauthorizedException('Token is missing');
+    }
+    await this.boardService.userLeaveBoard(id, token);
     return { message: '게시물에서 참가자가 나갔습니다' };
   }
 }

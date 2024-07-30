@@ -18,13 +18,16 @@ import { Location } from '../location/entities/location.entity';
 import { SseResponseDto } from '../sse/dto/sse-response.dto';
 import { PaginationParamsDto } from './dto/pagination-params.dto';
 import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
+import { JwtService } from '@nestjs/jwt';
+import { User } from '../user/entities/user.entity';
+import e from 'express';
 
 @Injectable()
 export class BoardService {
   private readonly logger = new Logger(BoardService.name);
   private boardUpdates: { [key: number]: Subject<any> } = {};
   private currentCapacity: { [key: number]: number } = {};
-  private participants: { [key: number]: Set<number> } = {};
+  private participants: { [key: number]: Set<string> } = {};
 
   constructor(
     @InjectRepository(Board)
@@ -32,6 +35,7 @@ export class BoardService {
     private readonly userService: UserService,
     private readonly locationService: LocationService,
     private readonly chatRoomService: ChatRoomService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async createBoard(
@@ -178,42 +182,51 @@ export class BoardService {
     return this.currentCapacity[boardId] || 0;
   }
 
-  async userAcessBoard(boardId: number, userId: number) {
+  async userAcessBoard(boardId: number, token: string) {
+    let payload;
+    try {
+      payload = await this.jwtService.verifyAsync(token);
+    } catch (err) {
+      throw new UnauthorizedException('유효하지 않은 토큰');
+    }
+    const userId = payload.userId;
+
     const board = await this.boardRepository.findOne({
       where: { id: boardId },
     });
-    const user = await this.userService.findOne(userId);
-
     if (!board) {
-      throw new NotFoundException(`Board with ID ${boardId} not found`);
+      throw new NotFoundException(`board ${boardId}를 찾을 수 없습니다`);
     }
 
-    const boardStatus = this.getBoardStatus(board.date);
-    if (boardStatus !== 'OPEN') {
-      throw new Error(`board가 OPEN 상태가 아닙니다`);
+    const user = await this.userService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException('user를 찾을 수 없습니다');
     }
 
     if (!this.boardUpdates[boardId]) {
       this.boardUpdates[boardId] = new Subject<SseResponseDto>();
     }
-
     if (!this.currentCapacity[boardId]) {
       this.currentCapacity[boardId] = 0;
     }
-
     if (!this.participants[boardId]) {
-      this.participants[boardId] = new Set<number>();
+      this.participants[boardId] = new Set<string>(); // Set<number> -> Set<string>
     }
+
+    if (this.participants[boardId].has(token)) {
+      throw new Error(`User는 이미 board ${boardId}에 참가했습니다`);
+    }
+
+    this.participants[boardId].add(token);
 
     if (this.currentCapacity[boardId] >= board.max_capacity) {
       throw new Error('제한 인원이 다 찼습니다');
     }
 
     this.currentCapacity[boardId] += 1;
-    this.participants[boardId].add(userId);
 
     this.logger.log(
-      `user ${userId}가 board ${boardId}에 접근했습니다. 현재 인원: ${this.currentCapacity[boardId]}`,
+      `Token ${token}가 board ${boardId}에 접근했습니다. 현재 인원: ${this.currentCapacity[boardId]}`,
     );
 
     const sseResponse = new SseResponseDto();
@@ -224,35 +237,42 @@ export class BoardService {
     this.boardUpdates[boardId].next(sseResponse);
   }
 
-  async userLeaveBoard(boardId: number, userId: number) {
+  async userLeaveBoard(boardId: number, token: string) {
+    let payload;
+    try {
+      payload = await this.jwtService.verifyAsync(token);
+    } catch (err) {
+      throw new UnauthorizedException('유효하지 않은 토큰');
+    }
+    const userId = payload.userId;
+
     const board = await this.boardRepository.findOne({
       where: { id: boardId },
     });
-    const user = await this.userService.findOne(userId);
-
     if (!board) {
       throw new NotFoundException(`board ${boardId}를 찾을 수 없습니다`);
+    }
+
+    const user = await this.userService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다');
     }
 
     if (!this.boardUpdates[boardId]) {
       this.boardUpdates[boardId] = new Subject<SseResponseDto>();
     }
-
     if (!this.currentCapacity[boardId]) {
       this.currentCapacity[boardId] = 0;
     }
-
     if (!this.participants[boardId]) {
-      this.participants[boardId] = new Set<number>();
+      this.participants[boardId] = new Set<string>(); // Set<number> -> Set<string>
     }
 
-    if (!this.participants[boardId].has(userId)) {
-      throw new Error(
-        `User ${userId}는 board ${boardId}에 참가하지 않았습니다`,
-      );
+    if (!this.participants[boardId].has(token)) {
+      throw new Error(`User는 board ${boardId}에 참가하지 않았습니다`);
     }
 
-    this.participants[boardId].delete(userId);
+    this.participants[boardId].delete(token);
 
     if (this.currentCapacity[boardId] > 0) {
       this.currentCapacity[boardId] -= 1;
@@ -261,7 +281,7 @@ export class BoardService {
     }
 
     this.logger.log(
-      `User ${userId}가 board ${boardId}에서 나갔습니다. 현재 인원 : ${this.currentCapacity[boardId]}`,
+      `Token ${token}가 board ${boardId}에서 나갔습니다. 현재 인원: ${this.currentCapacity[boardId]}`,
     );
 
     const sseResponse = new SseResponseDto();
