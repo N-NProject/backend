@@ -8,13 +8,13 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../user/entities/user.entity';
-import { Timestamp } from '../../global/common/timeStamp';
+import { TimeStamp } from '../../global/common/timeStamp';
 import { Location } from '../../location/entities/location.entity';
 import { Category } from '../../global/enums/category.enum';
 import { ChatRoom } from '../../chat-room/entities/chat-room.entity';
 
 @Entity('board')
-export class Board extends Timestamp {
+export class Board extends TimeStamp {
   @PrimaryGeneratedColumn()
   @ApiProperty({ description: '게시판 ID' })
   id: number;

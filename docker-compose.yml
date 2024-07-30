@@ -32,11 +32,14 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_DATABASE}
     ports:
-      - '9090:9090'
+      - '8000:8000'
     depends_on:
       - db
     networks:
       - custom-network
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
 
 networks:
   custom-network:

@@ -1,12 +1,12 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Board } from '../../board/entities/board.entity';
-import { Timestamp } from '../../global/common/timestamp';
+import { TimeStamp } from '../../global/common/timeStamp';
 import { UserChatRoom } from '../../user-chat-room/entities/user-chat-room.entity';
 import { Message } from '../../message/entities/message.entity';
 
 @Entity('user')
-export class User extends Timestamp {
+export class User extends TimeStamp {
   @PrimaryGeneratedColumn()
   @ApiProperty({ description: 'user_id' })
   id: number;
