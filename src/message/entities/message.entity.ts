@@ -2,10 +2,10 @@ import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { ChatRoom } from '../../chat-room/entities/chat-room.entity';
 import { User } from '../../user/entities/user.entity';
-import { Timestamp } from '../../global/common/timestamp';
+import { TimeStamp } from '../../global/common/timeStamp';
 
 @Entity('message')
-export class Message extends Timestamp {
+export class Message extends TimeStamp {
   @PrimaryGeneratedColumn()
   @ApiProperty({ description: '메시지 ID' })
   id: number;
