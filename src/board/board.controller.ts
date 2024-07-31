@@ -112,6 +112,15 @@ export class BoardController {
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Post(':id/access')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        token: { type: 'string' },
+      },
+      required: ['token'],
+    },
+  })
   async accessBoard(
     @Param('id') id: number,
     @Body('token') token: string,
@@ -126,6 +135,15 @@ export class BoardController {
   @ApiOperation({ summary: '게시물 떠나기' })
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        token: { type: 'string' },
+      },
+      required: ['token'],
+    },
+  })
   @Post(':id/leave')
   async leaveBoard(
     @Param('id') id: number,
