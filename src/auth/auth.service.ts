@@ -9,10 +9,31 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async getJwt(id: number): Promise<{ accessToken: string }> {
-    const payload = { sub: id };
-    const secrect = this.configService.get<string>('JWT_SECRET');
+  private async generateTokens(payload: any) {
+    const refreshTokenExpirationTime = this.configService.get<string>(
+      'REFRESH_TOKEN_EXPIRATION_TIME',
+    );
+
     const accessToken = await this.jwtService.signAsync(payload);
-    return { accessToken };
+    const refreshToken = refreshTokenExpirationTime
+      ? await this.jwtService.signAsync(payload, {
+          expiresIn: refreshTokenExpirationTime,
+        })
+      : undefined;
+
+    return { accessToken, refreshToken };
+  }
+
+  async createTokens(
+    id: number,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const payload = { sub: id };
+    return this.generateTokens(payload);
+  }
+
+  async refreshTokens(refreshToken: string) {
+    const payload = await this.jwtService.verifyAsync(refreshToken);
+    const newPayload = { sub: payload['sub'] };
+    return this.generateTokens(newPayload);
   }
 }

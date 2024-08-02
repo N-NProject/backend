@@ -2,12 +2,14 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Logger,
   Query,
   Redirect,
+  Req,
   Res,
 } from '@nestjs/common';
 import axios from 'axios';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -16,9 +18,11 @@ import { ApiTags } from '@nestjs/swagger';
 @ApiTags('Auth')
 @Controller('api/v1/auth')
 export class AuthController {
-  readonly origin: string;
-  readonly client_id: string;
-  readonly redirect_uri: string;
+  private readonly origin: string;
+  private readonly client_id: string;
+  private readonly redirect_uri: string;
+
+  private readonly logger = new Logger(AuthController.name);
 
   constructor(
     private readonly config: ConfigService,
@@ -42,7 +46,7 @@ export class AuthController {
   }
 
   @Get('redirect')
-  async redirect(@Query('code') code: string) {
+  async redirect(@Query('code') code: string, @Res() res: Response) {
     const data = {
       grant_type: 'authorization_code',
       client_id: this.client_id,
@@ -79,10 +83,23 @@ export class AuthController {
         user = await this.userService.createUserWithKakaoId(kakaoId);
       }
 
-      return this.authService.getJwt(user.id);
+      const { accessToken, refreshToken } = await this.authService.createTokens(
+        user.id,
+      );
+
+      this.setTokens(res, accessToken, refreshToken);
     } catch {
       throw new BadRequestException();
     }
+  }
+
+  @Get('redirect/refresh')
+  async refresh(@Req() req: Request, @Res() res: Response) {
+    const { accessToken, refreshToken } = await this.authService.refreshTokens(
+      req.cookies['refreshToken'],
+    );
+
+    this.setTokens(res, accessToken, refreshToken);
   }
 
   // 카카오 로그인 테스트 용도, 삭제 예정
@@ -98,5 +115,27 @@ export class AuthController {
                 </body>
             </html>
         `);
+  }
+
+  private setTokens(res: Response, accessToken: string, refreshToken: string) {
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      // secure: true, // HTTPS 사용 시 활성화
+      sameSite: 'strict',
+      path: '/api/v1', // 쿠키가 /api/v1 경로에서만 유효
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      // secure: true, // HTTPS 사용 시 활성화
+      sameSite: 'strict',
+      path: '/api/v1/auth/redirect', // 쿠키가 /api/v1/auth/redirect 경로에서만 유효
+    });
+
+    this.logger.log(
+      `Tokens issued - Access Token: ${accessToken}, Refresh Token: ${refreshToken}`,
+    );
+
+    res.sendStatus(200);
   }
 }

@@ -5,6 +5,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io'; // Import the Socket.IO adapter
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule); // Express 기반의 애플리케이션 생성
@@ -33,6 +34,9 @@ async function bootstrap() {
 
   // 정적 파일 제공 설정
   app.useStaticAssets(join(__dirname, '..', 'public'));
+
+  // cookieParser 설정
+  app.use(cookieParser());
 
   // 메인 서버 시작
   await app.listen(8000);
