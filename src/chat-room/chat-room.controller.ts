@@ -52,21 +52,21 @@ export class ChatRoomController {
   @ApiOperation({ summary: '메세지 전송' })
   @ApiBody({ type: CreateMessageDto })
   async sendMessage(
-    @Token('sub') userId: number,
-    @Param('chatRoomId') chatRoomId: number,
-    @Body() message: { content: string },
+      @Token('sub') userId: number,
+      @Param('chatRoomId') chatRoomId: number,
+      @Body() message: { content: string },
   ) {
     const user = await this.chatRoomService.getUser(userId);
     const username = user ? user.username : 'Unknown';
 
     this.logger.log(
-      `유저 ${userId} (${username})가 채팅방 ${chatRoomId}에 메세지 전송: ${message.content}`,
+        `유저 ${userId} (${username})가 채팅방 ${chatRoomId}에 메세지 전송: ${message.content}`,
     );
     return this.chatRoomService.sendMessage(
-      chatRoomId,
-      userId,
-      message.content,
-      username,
+        chatRoomId,
+        userId,
+        message.content,
+        username,
     );
   }
 

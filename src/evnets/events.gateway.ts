@@ -60,11 +60,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     message: { content: string; userId: number; nickname: string },
   ): Promise<void> {
     const { chatRoomId } = client.data;
-    await this.chatRoomService.sendMessage(
-      chatRoomId,
-      message.userId,
-      message.content,
-      message.nickname,
-    );
+    await this.chatRoomService.sendMessageToRoom(chatRoomId, {
+      id: client.id,
+      userId: message.userId,
+      nickname: message.nickname,
+      content: message.content,
+    });
   }
 }
