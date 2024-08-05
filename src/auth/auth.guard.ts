@@ -17,14 +17,13 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
+    const token = this.extractTokenFromCookie(request);
     if (!token) {
       console.log('토큰이 제공되지 않았습니다.');
       throw new UnauthorizedException('토큰이 제공되지 않았습니다.');
     }
 
     try {
-      const secret = this.configService.get<string>('JWT_SECRET');
       const payload = await this.jwtService.verifyAsync(token);
       //console.log('토큰 페이로드:', payload);
       request['token'] = payload;
@@ -35,9 +34,7 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 
-  private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    //console.log('추출된 토큰:', token);
-    return type === 'Bearer' ? token : undefined;
+  private extractTokenFromCookie(request: Request): string | undefined {
+    return request.cookies['accessToken'];
   }
 }
