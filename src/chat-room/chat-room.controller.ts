@@ -10,6 +10,7 @@ import {
   Get,
   Body,
   NotFoundException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ChatRoomService } from './chat-room.service';
 import { BoardIdDto } from './dto/board-id.dto';
@@ -85,14 +86,14 @@ export class ChatRoomController {
     return this.chatRoomService.getChatRooms();
   }
 
-  //특정 채팅방 조회
+  // 특정 채팅방 조회
   @ApiBearerAuth()
   @Get(':chatRoomId')
   @ApiOperation({ summary: '특정 채팅방 조회' })
   @HttpCode(200)
   async getChatRoom(
     @Token('sub') id: number,
-    @Param('chatRoomId') chatRoomId: number,
+    @Param('chatRoomId', ParseIntPipe) chatRoomId: number,
   ) {
     this.logger.log(`유저 ${id}가 채팅방 ${chatRoomId}를 조회합니다`);
     const chatRoom = await this.chatRoomService.getChatRoom(chatRoomId);
