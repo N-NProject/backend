@@ -66,8 +66,6 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: '특정 게시물 조회' })
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
   @Get(':id')
   async findOne(
     @Param('id') id: number,

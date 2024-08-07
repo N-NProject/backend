@@ -41,14 +41,10 @@ export class ChatRoomController {
   @HttpCode(200)
   async accessChatRoom(
     @Token('sub') id: number,
-    @Query() boardIdDto: BoardIdDto,
+    @Body('boardId') boardId: number, // boardId를 body로 받음
   ) {
-    this.logger.log(
-      `User ${id} is joining chat room for board ${boardIdDto.boardId}`,
-    );
-    const chatRoom = await this.chatRoomService.findOrCreateChatRoom(
-      boardIdDto.boardId,
-    );
+    this.logger.log(`User ${id} is joining chat room for board ${boardId}`);
+    const chatRoom = await this.chatRoomService.findOrCreateChatRoom(boardId);
     return this.chatRoomService.joinChatRoom(chatRoom.id, id);
   }
 
