@@ -104,42 +104,42 @@ export class ChatRoomService {
     return message;
   }
 
-  async sendMessageToRoom(
-    chatRoomId: string,
-    message: { id: string; userId: number; nickname: string; content: string },
-  ): Promise<void> {
-    const chatRoomNumId = parseInt(chatRoomId.split(':')[1]);
-    const chatRoom = await this.chatRoomRepository.findOne({
-      where: { id: chatRoomNumId },
-    });
-    if (!chatRoom) {
-      throw new NotFoundException('채팅방을 찾을 수 없습니다.');
-    }
-
-    const user = await this.userRepository.findOne({
-      where: { id: message.userId },
-    });
-    if (!user) {
-      throw new NotFoundException('사용자를 찾을 수 없습니다.');
-    }
-
-    const newMessage = this.messageRepository.create({
-      content: message.content,
-      chatRoom,
-      user,
-    });
-    await this.messageRepository.save(newMessage);
-
-    this.eventsGateway.broadcastMessage('broadcastMessage', {
-      chatRoomId,
-      content: message.content,
-      nickname: message.nickname,
-    });
-
-    this.eventsGateway.log(
-      `채팅방 ${chatRoomId}에 메시지 전송: ${message.content}`,
-    );
-  }
+  // async sendMessageToRoom(
+  //   chatRoomId: number,
+  //   message: { id: string; userId: number; nickname: string; content: string },
+  // ): Promise<void> {
+  //   const chatRoomNumId = parseInt(chatRoomId.split(':')[1]);
+  //   const chatRoom = await this.chatRoomRepository.findOne({
+  //     where: { id: chatRoomNumId },
+  //   });
+  //   if (!chatRoom) {
+  //     throw new NotFoundException('채팅방을 찾을 수 없습니다.');
+  //   }
+  //
+  //   const user = await this.userRepository.findOne({
+  //     where: { id: message.userId },
+  //   });
+  //   if (!user) {
+  //     throw new NotFoundException('사용자를 찾을 수 없습니다.');
+  //   }
+  //
+  //   const newMessage = this.messageRepository.create({
+  //     content: message.content,
+  //     chatRoom,
+  //     user,
+  //   });
+  //   await this.messageRepository.save(newMessage);
+  //
+  //   this.eventsGateway.broadcastMessage('broadcastMessage', {
+  //     chatRoomId,
+  //     content: message.content,
+  //     nickname: message.nickname,
+  //   });
+  //
+  //   this.eventsGateway.log(
+  //     `채팅방 ${chatRoomId}에 메시지 전송: ${message.content}`,
+  //   );
+  // }
 
   async getChatRooms(): Promise<ChatRoom[]> {
     return this.chatRoomRepository.find();

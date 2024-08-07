@@ -9,6 +9,7 @@ import {
   Logger,
   Get,
   Body,
+  NotFoundException,
 } from '@nestjs/common';
 import { ChatRoomService } from './chat-room.service';
 import { BoardIdDto } from './dto/board-id.dto';
@@ -17,6 +18,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
+import { UserService } from '../user/user.service';
 
 @ApiTags('Chat-rooms')
 @Controller('api/v1/chatrooms')
@@ -24,7 +26,10 @@ import { CreateMessageDto } from '../message/dto/create-message.dto';
 export class ChatRoomController {
   private readonly logger = new Logger(ChatRoomController.name);
 
-  constructor(private readonly chatRoomService: ChatRoomService) {}
+  constructor(
+    private readonly chatRoomService: ChatRoomService,
+    private readonly userService: UserService,
+  ) {}
 
   /**
    * 게시글의 채팅방 접속
@@ -52,21 +57,21 @@ export class ChatRoomController {
   @ApiOperation({ summary: '메세지 전송' })
   @ApiBody({ type: CreateMessageDto })
   async sendMessage(
-      @Token('sub') userId: number,
-      @Param('chatRoomId') chatRoomId: number,
-      @Body() message: { content: string },
+    @Token('sub') userId: number,
+    @Param('chatRoomId') chatRoomId: number,
+    @Body() message: { content: string },
   ) {
     const user = await this.chatRoomService.getUser(userId);
     const username = user ? user.username : 'Unknown';
 
     this.logger.log(
-        `유저 ${userId} (${username})가 채팅방 ${chatRoomId}에 메세지 전송: ${message.content}`,
+      `유저 ${userId} (${username})가 채팅방 ${chatRoomId}에 메세지 전송: ${message.content}`,
     );
     return this.chatRoomService.sendMessage(
-        chatRoomId,
-        userId,
-        message.content,
-        username,
+      chatRoomId,
+      userId,
+      message.content,
+      username,
     );
   }
 
@@ -90,7 +95,19 @@ export class ChatRoomController {
     @Param('chatRoomId') chatRoomId: number,
   ) {
     this.logger.log(`유저 ${id}가 채팅방 ${chatRoomId}를 조회합니다`);
-    return this.chatRoomService.getChatRoom(chatRoomId);
+    const chatRoom = await this.chatRoomService.getChatRoom(chatRoomId);
+    const user = await this.userService.findOne(id);
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다');
+    }
+    const messagesWithNickname = chatRoom.messages.map((message) => ({
+      ...message,
+      nickname: user.username,
+    }));
+    return {
+      ...chatRoom,
+      messages: messagesWithNickname,
+    };
   }
 
   /**
