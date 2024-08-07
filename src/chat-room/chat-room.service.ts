@@ -146,6 +146,22 @@ export class ChatRoomService {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
 
+    let baseNickname = user.username;
+    let nickname = baseNickname;
+    let suffix = 1;
+
+    const userChatRooms = await this.userChatRoomRepository.find({
+      where: { chatRoom: { id: chatRoomId } },
+      relations: ['users'],
+    });
+
+    while (userChatRooms.some((ucr) => ucr.user.username === nickname)) {
+      nickname = `${baseNickname}${suffix}`;
+      suffix++;
+    }
+
+    user.username = nickname;
+
     const userChatRoom = this.userChatRoomRepository.create({ user, chatRoom });
     await this.userChatRoomRepository.save(userChatRoom);
 
