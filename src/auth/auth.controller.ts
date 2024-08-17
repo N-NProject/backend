@@ -77,10 +77,14 @@ export class AuthController {
       );
 
       const kakaoId = kakaoUserInfoResponse.data.id;
+      const nickname = kakaoUserInfoResponse.data.properties.nickname;
 
       let user = await this.userService.getUserByKakaoId(kakaoId);
       if (!user) {
-        user = await this.userService.createUserWithKakaoId(kakaoId);
+        user = await this.userService.createUserWithKakaoIdAndUsername(
+          kakaoId,
+          nickname,
+        );
       }
 
       const { accessToken, refreshToken } = await this.authService.createTokens(

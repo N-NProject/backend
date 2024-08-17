@@ -21,8 +21,11 @@ export class UserService {
     return this.userRepository.findOneBy({ kakaoId });
   }
 
-  async createUserWithKakaoId(kakaoId: number): Promise<User> {
-    const user = this.userRepository.create({ kakaoId });
+  async createUserWithKakaoIdAndUsername(
+    kakaoId: number,
+    username: string,
+  ): Promise<User> {
+    const user = this.userRepository.create({ kakaoId, username });
     return this.userRepository.save(user);
   }
 
