@@ -8,12 +8,14 @@ import { User } from '../user/entities/user.entity';
 import { EventsModule } from '../evnets/evnets.module';
 import { MessageModule } from '../message/message.module';
 import { Board } from '../board/entities/board.entity';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ChatRoom, UserChatRoom, User, Board]),
     MessageModule,
     forwardRef(() => EventsModule),
+    UserModule,
   ],
   controllers: [ChatRoomController],
   providers: [ChatRoomService],
