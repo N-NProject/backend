@@ -42,7 +42,7 @@ export class BoardService {
 
   async createBoard(
     createBoardDto: CreateBoardDto,
-    request: Request, // Extract the request object to retrieve the token from cookies
+    request: Request,
   ): Promise<BoardResponseDto> {
     const token = request.cookies['accessToken'];
 
@@ -83,7 +83,7 @@ export class BoardService {
       savedBoard.chat_room = chatRoom;
       await this.boardRepository.save(savedBoard);
 
-      await this.chatRoomService.joinChatRoom(chatRoom.id, token); // Re-use token if needed
+      await this.chatRoomService.joinChatRoom(chatRoom.id, token);
       this.logger.log(
         `사용자 ${user.id}가 채팅방 ID: ${chatRoom.id}에 참여하였습니다`,
       );
