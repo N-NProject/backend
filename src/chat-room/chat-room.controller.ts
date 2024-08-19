@@ -11,6 +11,9 @@ import {
   Body,
   NotFoundException,
   ParseIntPipe,
+  UnauthorizedException,
+  Req,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ChatRoomService } from './chat-room.service';
 import { BoardIdDto } from './dto/board-id.dto';
@@ -20,6 +23,7 @@ import { Token } from '../auth/auth.decorator';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { UserService } from '../user/user.service';
+import { Request } from 'express';
 
 @ApiTags('Chat-rooms')
 @Controller('api/v1/chatrooms')
@@ -37,15 +41,21 @@ export class ChatRoomController {
    */
   @ApiBearerAuth()
   @ApiOperation({ summary: '게시글의 채팅방 접속' })
-  @Post('join')
+  @Post('join/:boardId')
   @HttpCode(200)
   async accessChatRoom(
     @Token('sub') id: number,
-    @Body('boardId') boardId: number, // boardId를 body로 받음
+    @Param('boardId', ParseIntPipe) boardId: number,
+    @Req() request: Request,
   ) {
     this.logger.log(`User ${id} is joining chat room for board ${boardId}`);
-    const chatRoom = await this.chatRoomService.findOrCreateChatRoom(boardId);
-    return this.chatRoomService.joinChatRoom(chatRoom.id, id);
+
+    const token = request.cookies['accessToken'];
+    if (!token) {
+      throw new UnauthorizedException('JWT token is missing');
+    }
+
+    return this.chatRoomService.joinChatRoomByBoardId(boardId, token);
   }
 
   //메세지 전송
@@ -111,16 +121,23 @@ export class ChatRoomController {
    * 채팅방 나가기
    */
   @ApiBearerAuth()
-  @Delete(':chatRoomId/leave')
   @ApiOperation({ summary: '채팅방 나가기' })
+  @Delete(':chatRoomId/leave')
   @HttpCode(204)
   async leaveChatRoom(
     @Token('sub') id: number,
-    @Param() chatRoomIdDto: ChatRoomIdDto,
-  ): Promise<void> {
-    this.logger.log(
-      `User ${id} is leaving chat room ${chatRoomIdDto.chatRoomId}`,
-    );
-    return this.chatRoomService.leaveChatRoom(chatRoomIdDto.chatRoomId, id);
+    @Param('chatRoomId', ParseIntPipe) chatRoomId: number,
+    @Req() request: Request,
+  ) {
+    const token = request.cookies['accessToken'];
+    if (!token) {
+      throw new UnauthorizedException('JWT token is missing');
+    }
+
+    const payload = await this.chatRoomService.verifyToken(token);
+    const userId = payload.userId;
+
+    this.logger.log(`User ${userId} is leaving chat room ${chatRoomId}`);
+    return this.chatRoomService.leaveChatRoom(chatRoomId, userId);
   }
 }
