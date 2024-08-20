@@ -88,7 +88,7 @@ export class BoardService {
         `사용자 ${user.id}가 채팅방 ID: ${chatRoom.id}에 참여하였습니다`,
       );
 
-      return this.toBoardResponseDto(savedBoard, user.id, false);
+      return this.toBoardResponseDto(savedBoard, user.id, false, 0); // 기본값 0을 전달
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         this.logger.error('유효하지 않은 토큰: ', error);
@@ -105,15 +105,57 @@ export class BoardService {
     }
   }
 
+  // updateCurrentCapacity를 통해 최신 currentPerson 값을 관리
+  public updateCurrentCapacity(boardId: number, capacity: number): void {
+    this.currentCapacity[boardId] = capacity;
+  }
+
+  // findOne 메서드에서 최신 currentPerson 값을 반영
   async findOne(id: number, userId: number): Promise<BoardResponseDto> {
     const board = await this.boardRepository.findOne({
       where: { id },
       relations: ['user', 'location'],
     });
+
     if (!board) {
       throw new NotFoundException(`Board with ID ${id} not found`);
     }
-    return this.toBoardResponseDto(board, userId, false);
+
+    // BoardService에서 최신 currentPerson 값을 반영
+    const currentCapacity = this.getCurrentPerson(board.id);
+    return this.toBoardResponseDto(board, userId, false, currentCapacity);
+  }
+
+  // findAll 메서드에서도 동일하게 적용
+  async findAll(
+    paginationParams?: PaginationParamsDto,
+  ): Promise<PaginationBoardsResponseDto> {
+    const { page, limit } = paginationParams;
+    const skip = (page - 1) * limit;
+
+    const [boards, totalCount] = await this.boardRepository.findAndCount({
+      relations: ['user', 'location'],
+      skip,
+      take: limit,
+      order: {
+        updatedAt: 'DESC',
+      },
+    });
+
+    const totalPage = Math.ceil(totalCount / limit);
+
+    const data = boards.map((board) => {
+      const currentCapacity = this.getCurrentPerson(board.id); // 현재 인원 수 계산
+      return this.toBoardResponseDto(board, undefined, false, currentCapacity);
+    });
+
+    return {
+      data,
+      currentCount: data.length,
+      page,
+      limit,
+      totalPage,
+    };
   }
 
   async updateBoard(
@@ -157,7 +199,12 @@ export class BoardService {
     const savedBoard = await this.boardRepository.save(updatedBoard);
 
     // 업데이트된 게시물을 응답 형식으로 변환하여 반환
-    return this.toBoardResponseDto(savedBoard, userId, false);
+    return this.toBoardResponseDto(
+      savedBoard,
+      userId,
+      false,
+      this.getCurrentPerson(savedBoard.id),
+    );
   }
 
   async removeBoard(id: number): Promise<void> {
@@ -177,14 +224,11 @@ export class BoardService {
     return this.boardUpdates[id].asObservable();
   }
 
-  getCurrentCapacity(boardId: number): number {
-    return this.currentCapacity[boardId] || 0;
-  }
-
   public toBoardResponseDto(
     board: Board,
     userId: number,
-    inital: boolean,
+    initial: boolean,
+    currentCapacity: number, // 현재 인원 수를 받는 매개변수 추가
   ): BoardResponseDto {
     const {
       id,
@@ -200,11 +244,12 @@ export class BoardService {
       user,
       location,
     } = board;
+
     const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSE';
-    const currentPerson = inital
-      ? this.currentCapacity[id] || 0
-      : this.currentCapacity[id] || 0;
+    const currentPerson = currentCapacity || 0; // 전달받은 currentCapacity 값을 사용
+
     const editable = user.id === userId;
+
     return {
       id,
       title,
@@ -229,32 +274,8 @@ export class BoardService {
     };
   }
 
-  async findAll(
-    paginationParams?: PaginationParamsDto,
-  ): Promise<PaginationBoardsResponseDto> {
-    const { page, limit } = paginationParams;
-    const skip = (page - 1) * limit;
-
-    const [boards, totalCount] = await this.boardRepository.findAndCount({
-      relations: ['user', 'location'],
-      skip,
-      take: limit,
-      order: {
-        updatedAt: 'DESC',
-      },
-    });
-
-    const totalPage = Math.ceil(totalCount / limit);
-    const data = boards.map((board, index) =>
-      this.toBoardResponseDto(board, undefined, index === 0),
-    );
-    return {
-      data,
-      currentCount: data.length,
-      page,
-      limit,
-      totalPage,
-    };
+  private getCurrentPerson(boardId: number): number {
+    return this.currentCapacity[boardId] || 0;
   }
 
   private getBoardStatus(boardDate: string): string {

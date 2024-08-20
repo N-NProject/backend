@@ -38,7 +38,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ) {
       // client.id 대신 사용자의 실제 ID를 전달합니다.
       const userId = parseInt(client.data.userId, 10); // client.data.userId가 있다고 가정
-      this.chatRoomService.leaveChatRoom(
+      this.chatRoomService.leaveChatRoomByBoardId(
         parseInt(chatRoomId.split(':')[1]),
         userId,
       );
@@ -46,7 +46,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     this.logger.log('Client disconnected: ' + client.id);
   }
-
   broadcastMessage(event: string, message: any) {
     this.logger.log(`Broadcasting message: ${JSON.stringify(message)}`);
     this.server.emit(event, message);

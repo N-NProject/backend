@@ -29,6 +29,7 @@ import { Request } from 'express';
 @Controller('api/v1/chatrooms')
 @UseGuards(AuthGuard)
 export class ChatRoomController {
+  s;
   private readonly logger = new Logger(ChatRoomController.name);
 
   constructor(
@@ -122,22 +123,22 @@ export class ChatRoomController {
    */
   @ApiBearerAuth()
   @ApiOperation({ summary: '채팅방 나가기' })
-  @Delete(':chatRoomId/leave')
+  @Delete(':boardId/leave')
   @HttpCode(204)
   async leaveChatRoom(
-    @Token('sub') id: number,
-    @Param('chatRoomId', ParseIntPipe) chatRoomId: number,
+    @Token('sub') id: number, // 토큰에서 userId 추출
+    @Param('boardId', ParseIntPipe) boardId: number,
     @Req() request: Request,
   ) {
+    this.logger.log(
+      `User ${id} is leaving chat room associated with board ${boardId}`,
+    );
+
     const token = request.cookies['accessToken'];
     if (!token) {
       throw new UnauthorizedException('JWT token is missing');
     }
 
-    const payload = await this.chatRoomService.verifyToken(token);
-    const userId = payload.userId;
-
-    this.logger.log(`User ${userId} is leaving chat room ${chatRoomId}`);
-    return this.chatRoomService.leaveChatRoom(chatRoomId, userId);
+    return this.chatRoomService.leaveChatRoomByBoardId(boardId, id); // id를 userId로 사용
   }
 }
