@@ -87,21 +87,12 @@ export class ChatRoomService {
     if (!chatRoom) {
       throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
-
     return this.joinChatRoom(chatRoom.id, token);
   }
 
   async joinChatRoom(chatRoomId: number, token: string): Promise<void> {
     const payload = await this.verifyToken(token);
     const userId = payload.userId || payload.sub;
-    console.log(`Extracted userId from token: ${userId}`);
-
-    if (!userId) {
-      throw new UnauthorizedException('Invalid token or userId missing');
-    }
-
-    // 추가된 디버깅 로그
-    console.log(`Extracted userId from token: ${userId}`);
 
     if (!userId) {
       throw new UnauthorizedException('Invalid token or userId missing');
@@ -116,29 +107,20 @@ export class ChatRoomService {
       throw new NotFoundException('Chat room not found');
     }
 
-    console.log(`Before increment: ${this.currentCapacity[chatRoomId]}`);
     this.currentCapacity[chatRoomId] =
       (this.currentCapacity[chatRoomId] || 0) + 1;
-    console.log(`After increment: ${this.currentCapacity[chatRoomId]}`);
 
     this.participants[chatRoomId] =
       this.participants[chatRoomId] || new Set<number>();
     this.participants[chatRoomId].add(userId);
 
-    // 이 부분에서 userId와 user 객체의 정보를 확인
     const user = await this.getUser(userId);
-    console.log(`Fetched user: ${user.id} with username: ${user.username}`);
-    console.log(`User joining: ID=${userId}, Username=${user.username}`);
-
-    const sseResponse = new SseResponseDto();
-    sseResponse.currentPerson = this.currentCapacity[chatRoomId];
-    sseResponse.nickName = user.username;
-    this.getOrCreateRoomUpdate(chatRoomId).next(sseResponse);
 
     chatRoom.member_count += 1;
     await this.chatRoomRepository.save(chatRoom);
 
-    this.notifyMemberCountChange(chatRoom.id);
+    // 여기서만 `next` 메서드를 호출하도록 수정
+    this.notifyMemberCountChange(chatRoom.id, user.username);
   }
 
   async leaveChatRoomByBoardId(boardId: number, userId: number): Promise<void> {
@@ -165,8 +147,9 @@ export class ChatRoomService {
     // userId를 participants에서 삭제
     this.participants[chatRoom.id].delete(userId);
 
-    this.notifyMemberLeave(chatRoom.id, userId);
-    this.notifyMemberCountChange(chatRoom.id);
+    // 현재 인원 수 및 닉네임 업데이트
+    const user = await this.getUser(userId);
+    this.notifyMemberCountChange(chatRoom.id, user.username);
   }
 
   async sendMessage(
@@ -230,25 +213,32 @@ export class ChatRoomService {
     return this.getOrCreateRoomUpdate(chatRoom.id).asObservable();
   }
 
-  private notifyMemberCountChange(chatRoomId: number): void {
+  // 특정 boardId에 대한 currentPerson 값을 반환하는 메서드
+  public async getCurrentCapacityForBoard(boardId: number): Promise<number> {
+    const chatRoom = await this.findChatRoomByBoardId(boardId); // await 사용
+    if (chatRoom) {
+      return this.currentCapacity[chatRoom.id] || 0;
+    }
+    return 0;
+  }
+
+  private notifyMemberCountChange(chatRoomId: number, nickName?: string): void {
     const roomUpdateSubject = this.getOrCreateRoomUpdate(chatRoomId);
 
     const sseResponse = new SseResponseDto();
-    sseResponse.currentPerson = this.currentCapacity[chatRoomId]; // 현재 인원 수 포함
-    sseResponse.nickName = ''; // 닉네임은 현재 필요한 경우에만 설정
+    sseResponse.currentPerson = this.currentCapacity[chatRoomId];
+
+    if (nickName) {
+      sseResponse.nickName = nickName;
+    } else {
+      sseResponse.nickName = ''; // 닉네임이 없으면 빈 문자열
+    }
 
     roomUpdateSubject.next(sseResponse);
 
     this.logger.log(
-      `SSE event sent for chat room ${chatRoomId} with current person count ${sseResponse.currentPerson}`,
+      `SSE event sent for chat room ${chatRoomId} with current person count ${sseResponse.currentPerson} and nickName: ${sseResponse.nickName}`,
     );
-  }
-
-  private getOrCreateRoomUpdate(chatRoomId: number): Subject<SseResponseDto> {
-    if (!this.roomUpdates[chatRoomId]) {
-      this.roomUpdates[chatRoomId] = new Subject<SseResponseDto>();
-    }
-    return this.roomUpdates[chatRoomId];
   }
 
   private async notifyMemberLeave(
@@ -267,6 +257,13 @@ export class ChatRoomService {
     this.logger.log(
       `User ${userId} (${user?.username || 'Unknown'}) left chat room ${chatRoomId}. Current capacity: ${sseResponse.currentPerson}`,
     );
+  }
+
+  private getOrCreateRoomUpdate(chatRoomId: number): Subject<SseResponseDto> {
+    if (!this.roomUpdates[chatRoomId]) {
+      this.roomUpdates[chatRoomId] = new Subject<SseResponseDto>();
+    }
+    return this.roomUpdates[chatRoomId];
   }
 
   private async findChatRoomByBoardId(boardId: number): Promise<ChatRoom> {

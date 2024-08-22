@@ -97,15 +97,4 @@ export class BoardController {
     await this.boardService.removeBoard(id);
     return { message: 'board가 성공적으로 삭제되었습니다.' };
   }
-
-  // @ApiOperation({ summary: '현재 참여한 인원 조회' })
-  // @ApiBearerAuth()
-  // @UseGuards(AuthGuard)
-  // @Get(':id/current-person')
-  // async getCurrentPerson(
-  //   @Param('id') id: number,
-  // ): Promise<{ currentPerson: number }> {
-  //   const currentPerson = this.boardService.getCurrentCapacity(id);
-  //   return { currentPerson };
-  // }
 }

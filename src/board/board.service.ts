@@ -88,7 +88,7 @@ export class BoardService {
         `사용자 ${user.id}가 채팅방 ID: ${chatRoom.id}에 참여하였습니다`,
       );
 
-      return this.toBoardResponseDto(savedBoard, user.id, false, 0); // 기본값 0을 전달
+      return this.toBoardResponseDto(savedBoard, user.id, false); // 기본값 0을 전달하지 않음
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         this.logger.error('유효하지 않은 토큰: ', error);
@@ -105,12 +105,6 @@ export class BoardService {
     }
   }
 
-  // updateCurrentCapacity를 통해 최신 currentPerson 값을 관리
-  public updateCurrentCapacity(boardId: number, capacity: number): void {
-    this.currentCapacity[boardId] = capacity;
-  }
-
-  // findOne 메서드에서 최신 currentPerson 값을 반영
   async findOne(id: number, userId: number): Promise<BoardResponseDto> {
     const board = await this.boardRepository.findOne({
       where: { id },
@@ -121,12 +115,12 @@ export class BoardService {
       throw new NotFoundException(`Board with ID ${id} not found`);
     }
 
-    // BoardService에서 최신 currentPerson 값을 반영
-    const currentCapacity = this.getCurrentPerson(board.id);
-    return this.toBoardResponseDto(board, userId, false, currentCapacity);
+    // ChatRoomService에서 현재 인원 수를 가져오기
+    const currentCapacity =
+      await this.chatRoomService.getCurrentCapacityForBoard(id);
+    return this.toBoardResponseDto(board, userId, false);
   }
 
-  // findAll 메서드에서도 동일하게 적용
   async findAll(
     paginationParams?: PaginationParamsDto,
   ): Promise<PaginationBoardsResponseDto> {
@@ -144,10 +138,14 @@ export class BoardService {
 
     const totalPage = Math.ceil(totalCount / limit);
 
-    const data = boards.map((board) => {
-      const currentCapacity = this.getCurrentPerson(board.id); // 현재 인원 수 계산
-      return this.toBoardResponseDto(board, undefined, false, currentCapacity);
-    });
+    const data = await Promise.all(
+      boards.map(async (board) => {
+        // Fetch the current capacity from ChatRoomService
+        const currentCapacity =
+          await this.chatRoomService.getCurrentCapacityForBoard(board.id);
+        return this.toBoardResponseDto(board, undefined, false);
+      }),
+    );
 
     return {
       data,
@@ -199,12 +197,7 @@ export class BoardService {
     const savedBoard = await this.boardRepository.save(updatedBoard);
 
     // 업데이트된 게시물을 응답 형식으로 변환하여 반환
-    return this.toBoardResponseDto(
-      savedBoard,
-      userId,
-      false,
-      this.getCurrentPerson(savedBoard.id),
-    );
+    return this.toBoardResponseDto(savedBoard, userId, false);
   }
 
   async removeBoard(id: number): Promise<void> {
@@ -228,7 +221,6 @@ export class BoardService {
     board: Board,
     userId: number,
     initial: boolean,
-    currentCapacity: number, // 현재 인원 수를 받는 매개변수 추가
   ): BoardResponseDto {
     const {
       id,
@@ -246,7 +238,6 @@ export class BoardService {
     } = board;
 
     const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSE';
-    const currentPerson = currentCapacity || 0; // 전달받은 currentCapacity 값을 사용
 
     const editable = user.id === userId;
 
@@ -254,7 +245,7 @@ export class BoardService {
       id,
       title,
       maxCapacity: max_capacity,
-      currentPerson,
+      // currentPerson is removed
       description,
       startTime: start_time,
       date,
