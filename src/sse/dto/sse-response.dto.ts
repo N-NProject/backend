@@ -6,4 +6,7 @@ export class SseResponseDto {
 
   @ApiProperty({ description: '참여한 사용자 이름' })
   nickName: string;
+
+  @ApiProperty({ description: '참가한 게시글의 채팅방 id' })
+  chatRoomId: number;
 }
