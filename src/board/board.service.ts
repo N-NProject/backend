@@ -88,7 +88,7 @@ export class BoardService {
         `사용자 ${user.id}가 채팅방 ID: ${chatRoom.id}에 참여하였습니다`,
       );
 
-      return this.toBoardResponseDto(savedBoard, user.id, false);
+      return this.toBoardResponseDto(savedBoard, user.id, false); // 기본값 0을 전달하지 않음
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         this.logger.error('유효하지 않은 토큰: ', error);
@@ -110,10 +110,50 @@ export class BoardService {
       where: { id },
       relations: ['user', 'location'],
     });
+
     if (!board) {
       throw new NotFoundException(`Board with ID ${id} not found`);
     }
+
+    // ChatRoomService에서 현재 인원 수를 가져오기
+    const currentCapacity =
+      await this.chatRoomService.getCurrentCapacityForBoard(id);
     return this.toBoardResponseDto(board, userId, false);
+  }
+
+  async findAll(
+    paginationParams?: PaginationParamsDto,
+  ): Promise<PaginationBoardsResponseDto> {
+    const { page, limit } = paginationParams;
+    const skip = (page - 1) * limit;
+
+    const [boards, totalCount] = await this.boardRepository.findAndCount({
+      relations: ['user', 'location'],
+      skip,
+      take: limit,
+      order: {
+        updatedAt: 'DESC',
+      },
+    });
+
+    const totalPage = Math.ceil(totalCount / limit);
+
+    const data = await Promise.all(
+      boards.map(async (board) => {
+        // Fetch the current capacity from ChatRoomService
+        const currentCapacity =
+          await this.chatRoomService.getCurrentCapacityForBoard(board.id);
+        return this.toBoardResponseDto(board, undefined, false);
+      }),
+    );
+
+    return {
+      data,
+      currentCount: data.length,
+      page,
+      limit,
+      totalPage,
+    };
   }
 
   async updateBoard(
@@ -177,14 +217,10 @@ export class BoardService {
     return this.boardUpdates[id].asObservable();
   }
 
-  getCurrentCapacity(boardId: number): number {
-    return this.currentCapacity[boardId] || 0;
-  }
-
   public toBoardResponseDto(
     board: Board,
     userId: number,
-    inital: boolean,
+    initial: boolean,
   ): BoardResponseDto {
     const {
       id,
@@ -200,16 +236,16 @@ export class BoardService {
       user,
       location,
     } = board;
+
     const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSE';
-    const currentPerson = inital
-      ? this.currentCapacity[id] || 0
-      : this.currentCapacity[id] || 0;
+
     const editable = user.id === userId;
+
     return {
       id,
       title,
       maxCapacity: max_capacity,
-      currentPerson,
+      // currentPerson is removed
       description,
       startTime: start_time,
       date,
@@ -229,32 +265,8 @@ export class BoardService {
     };
   }
 
-  async findAll(
-    paginationParams?: PaginationParamsDto,
-  ): Promise<PaginationBoardsResponseDto> {
-    const { page, limit } = paginationParams;
-    const skip = (page - 1) * limit;
-
-    const [boards, totalCount] = await this.boardRepository.findAndCount({
-      relations: ['user', 'location'],
-      skip,
-      take: limit,
-      order: {
-        updatedAt: 'DESC',
-      },
-    });
-
-    const totalPage = Math.ceil(totalCount / limit);
-    const data = boards.map((board, index) =>
-      this.toBoardResponseDto(board, undefined, index === 0),
-    );
-    return {
-      data,
-      currentCount: data.length,
-      page,
-      limit,
-      totalPage,
-    };
+  private getCurrentPerson(boardId: number): number {
+    return this.currentCapacity[boardId] || 0;
   }
 
   private getBoardStatus(boardDate: string): string {
