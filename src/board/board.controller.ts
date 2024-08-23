@@ -89,12 +89,15 @@ export class BoardController {
     return this.boardService.updateBoard(id, userId, updateBoardDto);
   }
 
+  @Delete(':id')
   @ApiOperation({ summary: '게시물 삭제' })
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Delete(':id')
-  async remove(@Param('id') id: number): Promise<{ message: string }> {
-    await this.boardService.removeBoard(id);
+  async remove(
+    @Param('id') id: number,
+    @Token('sub') userId: number,
+  ): Promise<{ message: string }> {
+    await this.boardService.removeBoard(id, userId);
     return { message: 'board가 성공적으로 삭제되었습니다.' };
   }
 }

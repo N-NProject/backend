@@ -21,6 +21,7 @@ import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dt
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { DeepPartial } from 'typeorm';
+import { Message } from '../message/entities/message.entity';
 
 @Injectable()
 export class BoardService {
@@ -32,6 +33,8 @@ export class BoardService {
     @InjectRepository(Board)
     private readonly boardRepository: Repository<Board>,
     private readonly userService: UserService,
+    @InjectRepository(Message)
+    private readonly messageRepository: Repository<Message>,
     private readonly locationService: LocationService,
     private readonly chatRoomService: ChatRoomService,
     private readonly jwtService: JwtService,
@@ -44,14 +47,14 @@ export class BoardService {
     const token = request.cookies['accessToken'];
 
     if (!token) {
-      throw new UnauthorizedException('JWT token is missing');
+      throw new UnauthorizedException('JWT 토큰이 없습니다.');
     }
 
     try {
       const payload = await this.jwtService.verifyAsync(token);
       const user = await this.userService.findOne(payload.sub);
 
-      this.logger.log(`Received JWT token for user ID: ${user.id}`);
+      this.logger.log(`사용자 ID: ${user.id}에 대한 JWT 토큰을 받았습니다.`);
 
       const newLocation = await this.getOrCreateLocation(
         createBoardDto.location,
@@ -67,18 +70,22 @@ export class BoardService {
       });
 
       const savedBoard = await this.boardRepository.save(board);
-      this.logger.log(`Board created with ID: ${savedBoard.id}`);
+      this.logger.log(`게시판이 생성되었습니다. ID: ${savedBoard.id}`);
 
       const chatRoom = await this.chatRoomService.findOrCreateChatRoom(
         savedBoard.id,
       );
-      this.logger.log(`Chat room linked with board ID: ${savedBoard.id}`);
+      this.logger.log(
+        `게시판 ID: ${savedBoard.id}와 연결된 채팅방이 생성되었습니다.`,
+      );
 
       savedBoard.chat_room = chatRoom;
       await this.boardRepository.save(savedBoard);
 
       await this.chatRoomService.joinChatRoom(chatRoom.id, token);
-      this.logger.log(`User ${user.id} joined chat room ID: ${chatRoom.id}`);
+      this.logger.log(
+        `사용자 ${user.id}가 채팅방 ID: ${chatRoom.id}에 참가했습니다.`,
+      );
 
       return this.toBoardResponseDto(
         savedBoard,
@@ -87,13 +94,13 @@ export class BoardService {
       );
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
-        this.logger.error('Token has expired:', error);
+        this.logger.error('토큰이 만료되었습니다:', error);
         throw new UnauthorizedException(
-          'Your session has expired. Please log in again.',
+          '세션이 만료되었습니다. 다시 로그인 해주세요.',
         );
       } else {
-        this.logger.error('An error occurred while creating the board:', error);
-        throw new UnauthorizedException('Invalid token.');
+        this.logger.error('게시판 생성 중 오류가 발생했습니다:', error);
+        throw new UnauthorizedException('유효하지 않은 토큰입니다.');
       }
     }
   }
@@ -212,27 +219,32 @@ export class BoardService {
     );
   }
 
-  async removeBoard(id: number): Promise<void> {
-    const board = await this.boardRepository.findOne({ where: { id } });
+  async removeBoard(id: number, userId: number): Promise<void> {
+    const board = await this.boardRepository.findOne({
+      where: { id },
+      relations: ['user', 'chat_room', 'chat_room.messages'], // 관련 메시지도 가져옵니다.
+    });
 
     if (!board) {
-      throw new NotFoundException(`Board with ID ${id} not found`);
+      throw new NotFoundException(`ID가 ${id}인 게시판을 찾을 수 없습니다.`);
+    }
+
+    if (board.user.id !== userId) {
+      throw new UnauthorizedException('이 게시판을 삭제할 권한이 없습니다.');
+    }
+
+    // 먼저 관련된 메시지를 삭제합니다.
+    if (board.chat_room?.messages) {
+      await this.messageRepository.remove(board.chat_room.messages);
     }
 
     await this.boardRepository.remove(board);
   }
 
-  getBoardUpdates(id: number): Observable<SseResponseDto> {
-    if (!this.boardUpdates[id]) {
-      this.boardUpdates[id] = new Subject<SseResponseDto>();
-    }
-    return this.boardUpdates[id].asObservable();
-  }
-
   public toBoardResponseDto(
     board: Board,
     userId: number,
-    currentCapacity: number, // 이 값은 currentCapacity로 불립니다.
+    currentCapacity: number,
   ): BoardResponseDto {
     const {
       id,
@@ -256,7 +268,7 @@ export class BoardService {
       id,
       title,
       maxCapacity: max_capacity,
-      currentCapacity, // Initial current person count를 currentCapacity로 설정
+      currentCapacity,
       description,
       startTime: start_time,
       date,
