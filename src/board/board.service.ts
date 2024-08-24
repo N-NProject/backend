@@ -160,7 +160,7 @@ export class BoardService {
   }
 
   public async handleBoardUpdate(boardId: number): Promise<void> {
-    const chatRoom = await this.chatRoomService.findChatRoomByBoardId(boardId); // chatRoomId를 얻기 위해 추가
+    const chatRoom = await this.chatRoomService.findChatRoomByBoardId(boardId);
     const currentCapacity =
       await this.chatRoomService.getCurrentCapacityForBoard(boardId);
 
@@ -169,7 +169,7 @@ export class BoardService {
       const sseResponse: SseResponseDto = {
         currentPerson: currentCapacity,
         nickName: '', // 빈 문자열을 사용하여 nickName을 처리
-        chatRoomId: chatRoom.id, // chatRoomId를 추가
+        chatRoomId: chatRoom.id,
       };
       if (this.boardUpdates[boardId]) {
         this.boardUpdates[boardId].next(sseResponse);
@@ -222,7 +222,7 @@ export class BoardService {
   async removeBoard(id: number, userId: number): Promise<void> {
     const board = await this.boardRepository.findOne({
       where: { id },
-      relations: ['user', 'chat_room', 'chat_room.messages'], // 관련 메시지도 가져옵니다.
+      relations: ['user', 'chat_room', 'chat_room.messages'],
     });
 
     if (!board) {

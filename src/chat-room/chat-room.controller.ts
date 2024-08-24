@@ -4,7 +4,6 @@ import {
   HttpCode,
   Param,
   Post,
-  Query,
   UseGuards,
   Logger,
   Get,
@@ -13,11 +12,9 @@ import {
   ParseIntPipe,
   UnauthorizedException,
   Req,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { ChatRoomService } from './chat-room.service';
-import { BoardIdDto } from './dto/board-id.dto';
-import { ChatRoomIdDto } from './dto/chat-room-id.dto';
+
 import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -139,6 +136,6 @@ export class ChatRoomController {
       throw new UnauthorizedException('JWT token is missing');
     }
 
-    return this.chatRoomService.leaveChatRoomByBoardId(boardId, id); // id를 userId로 사용
+    return this.chatRoomService.leaveChatRoomByBoardId(boardId, id);
   }
 }

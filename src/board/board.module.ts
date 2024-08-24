@@ -10,7 +10,7 @@ import { Message } from '../message/entities/message.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Board, Message]), // Message 엔터티 추가
+    TypeOrmModule.forFeature([Board, Message]),
     UserModule,
     LocationModule,
     ChatRoomModule,

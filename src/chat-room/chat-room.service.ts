@@ -121,7 +121,6 @@ export class ChatRoomService {
 
     this.notifyMemberCountChange(chatRoom.id, user.username);
 
-    // Log 추가
     this.logger.log(
       `User ${userId} joined chat room ID: ${chatRoomId}. Current count: ${this.currentCapacity[chatRoomId]}`,
     );
@@ -242,37 +241,18 @@ export class ChatRoomService {
 
     const sseResponse = new SseResponseDto();
     sseResponse.currentPerson = this.currentCapacity[chatRoomId];
-    sseResponse.chatRoomId = chatRoomId; // chatRoomId를 추가합니다.
+    sseResponse.chatRoomId = chatRoomId;
 
     if (nickName) {
       sseResponse.nickName = nickName;
     } else {
-      sseResponse.nickName = ''; // 닉네임이 없으면 빈 문자열
+      sseResponse.nickName = '';
     }
 
     roomUpdateSubject.next(sseResponse);
 
     this.logger.log(
       `SSE event sent for chat room ${chatRoomId} with current person count ${sseResponse.currentPerson}, nickName: ${sseResponse.nickName}, and chatRoomId: ${sseResponse.chatRoomId}`,
-    );
-  }
-
-  private async notifyMemberLeave(
-    chatRoomId: number,
-    userId: number,
-  ): Promise<void> {
-    const user = await this.getUser(userId);
-    const roomUpdateSubject = this.getOrCreateRoomUpdate(chatRoomId);
-
-    const sseResponse = new SseResponseDto();
-    sseResponse.currentPerson = this.currentCapacity[chatRoomId];
-    sseResponse.chatRoomId = chatRoomId; // chatRoomId를 추가합니다.
-    sseResponse.nickName = user?.username || 'Unknown'; // 사용자의 닉네임 또는 'Unknown'으로 설정
-
-    roomUpdateSubject.next(sseResponse);
-
-    this.logger.log(
-      `User ${userId} (${user?.username || 'Unknown'}) left chat room ${chatRoomId}. Current capacity: ${sseResponse.currentPerson}, chatRoomId: ${sseResponse.chatRoomId}`,
     );
   }
 
