@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import {
   Body,
   Controller,
@@ -16,7 +17,6 @@ import { BoardService } from './board.service';
 import { CreateBoardDto } from './dto/create-board';
 import {
   ApiBearerAuth,
-  ApiBody,
   ApiOperation,
   ApiQuery,
   ApiTags,
@@ -33,7 +33,6 @@ import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dt
 export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
-  // TODO : 토큰을 넣도록 수정할 가능성 존재
   @ApiQuery({
     name: 'page',
     required: false,
@@ -60,14 +59,16 @@ export class BoardController {
   @Post()
   async create(
     @Body(ValidationPipe) createBoardDto: CreateBoardDto,
-    @Token('sub') userId: number,
+    @Req() request: Request, // Request 객체를 사용하여 쿠키에서 토큰 추출
   ): Promise<BoardResponseDto> {
-    return this.boardService.createBoard(userId, createBoardDto);
+    const token = request.cookies?.accessToken; // 안전하게 접근하도록 수정
+    if (!token) {
+      throw new UnauthorizedException('JWT token is missing');
+    }
+    return this.boardService.createBoard(createBoardDto, request);
   }
 
   @ApiOperation({ summary: '특정 게시물 조회' })
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
   @Get(':id')
   async findOne(
     @Param('id') id: number,
@@ -95,64 +96,5 @@ export class BoardController {
   async remove(@Param('id') id: number): Promise<{ message: string }> {
     await this.boardService.removeBoard(id);
     return { message: 'board가 성공적으로 삭제되었습니다.' };
-  }
-
-  @ApiOperation({ summary: '현재 참여한 인원 조회' })
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Get(':id/current-person')
-  async getCurrentPerson(
-    @Param('id') id: number,
-  ): Promise<{ currentPerson: number }> {
-    const currentPerson = this.boardService.getCurrentCapacity(id);
-    return { currentPerson };
-  }
-
-  @ApiOperation({ summary: '게시물 참여하기' })
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Post(':id/access')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        token: { type: 'string' },
-      },
-      required: ['token'],
-    },
-  })
-  async accessBoard(
-    @Param('id') id: number,
-    @Body('token') token: string,
-  ): Promise<{ message: string }> {
-    if (!token) {
-      throw new UnauthorizedException('Token is missing');
-    }
-    await this.boardService.userAcessBoard(id, token);
-    return { message: '게시물에 참가자가 참여했습니다' };
-  }
-
-  @ApiOperation({ summary: '게시물 떠나기' })
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        token: { type: 'string' },
-      },
-      required: ['token'],
-    },
-  })
-  @Post(':id/leave')
-  async leaveBoard(
-    @Param('id') id: number,
-    @Body('token') token: string,
-  ): Promise<{ message: string }> {
-    if (!token) {
-      throw new UnauthorizedException('Token is missing');
-    }
-    await this.boardService.userLeaveBoard(id, token);
-    return { message: '게시물에서 참가자가 나갔습니다' };
   }
 }

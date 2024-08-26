@@ -62,8 +62,8 @@ export class BoardResponseDto {
   @ApiProperty()
   status: string;
 
-  @ApiProperty()
-  currentPerson: number;
+  // @ApiProperty()
+  // currentPerson: number;
 
   @ApiProperty()
   editable: boolean;
