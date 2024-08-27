@@ -9,15 +9,13 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChatRoom } from './entities/chat-room.entity';
-import { UserChatRoom } from '../user-chat-room/entities/user-chat-room.entity';
 import { User } from '../user/entities/user.entity';
 import { Message } from '../message/entities/message.entity';
 import { Board } from '../board/entities/board.entity';
-import { EventsGateway } from '../evnets/events.gateway';
+import { EventsGateway } from '../events/events.gateway';
 import { JwtService } from '@nestjs/jwt';
 import { SseResponseDto } from '../sse/dto/sse-response.dto';
 import { Observable, Subject } from 'rxjs';
-import { BoardService } from '../board/board.service';
 
 @Injectable()
 export class ChatRoomService {
@@ -29,8 +27,6 @@ export class ChatRoomService {
   constructor(
     @InjectRepository(ChatRoom)
     private readonly chatRoomRepository: Repository<ChatRoom>,
-    @InjectRepository(UserChatRoom)
-    private readonly userChatRoomRepository: Repository<UserChatRoom>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Message)
@@ -40,8 +36,6 @@ export class ChatRoomService {
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
     private readonly jwtService: JwtService,
-    @Inject(forwardRef(() => BoardService))
-    private readonly boardService: BoardService,
   ) {}
 
   async findOrCreateChatRoom(boardId: number): Promise<ChatRoom> {
@@ -220,6 +214,14 @@ export class ChatRoomService {
       return this.currentCapacity[chatRoom.id] || 0;
     }
     return 0;
+  }
+
+  /* 채팅방 현재 인원 조회 */
+  async getMemberCount(chatRoomId: number): Promise<number> {
+    const chatRoom = await this.chatRoomRepository.findOne({
+      where: { id: chatRoomId },
+    });
+    return chatRoom ? chatRoom.member_count : 0;
   }
 
   private notifyMemberCountChange(chatRoomId: number, nickName?: string): void {

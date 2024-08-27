@@ -1,23 +1,19 @@
 import {
+  Body,
   Controller,
   Delete,
-  HttpCode,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-  Logger,
   Get,
-  Body,
+  HttpCode,
+  Logger,
   NotFoundException,
+  Param,
   ParseIntPipe,
-  UnauthorizedException,
+  Post,
   Req,
-  InternalServerErrorException,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { ChatRoomService } from './chat-room.service';
-import { BoardIdDto } from './dto/board-id.dto';
-import { ChatRoomIdDto } from './dto/chat-room-id.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -29,7 +25,6 @@ import { Request } from 'express';
 @Controller('api/v1/chatrooms')
 @UseGuards(AuthGuard)
 export class ChatRoomController {
-  s;
   private readonly logger = new Logger(ChatRoomController.name);
 
   constructor(
