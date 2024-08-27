@@ -27,6 +27,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
 import { PaginationParamsDto } from './dto/pagination-params.dto';
 import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
+import { BoardIdDto } from './dto/boardId.dto';
 
 @ApiTags('Boards')
 @Controller('api/v1/boards')
@@ -71,10 +72,11 @@ export class BoardController {
   @ApiOperation({ summary: '특정 게시물 조회' })
   @Get(':id')
   async findOne(
-    @Param('id') id: number,
+    @Param() boardIdDto: BoardIdDto,
     @Token('sub') userId: number,
   ): Promise<BoardResponseDto> {
-    return this.boardService.findOne(id, userId);
+    const { boardId } = boardIdDto;
+    return this.boardService.findOne(boardId, userId);
   }
 
   @ApiOperation({ summary: '게시물 업데이트' })
@@ -82,11 +84,12 @@ export class BoardController {
   @UseGuards(AuthGuard)
   @Patch(':id')
   async update(
-    @Param('id') id: number,
+    @Param() boardIdDto: BoardIdDto, // <- 변경
     @Body(ValidationPipe) updateBoardDto: UpdateBoardDto,
     @Token('sub') userId: number,
   ): Promise<BoardResponseDto> {
-    return this.boardService.updateBoard(id, userId, updateBoardDto);
+    const { boardId } = boardIdDto;
+    return this.boardService.updateBoard(boardId, userId, updateBoardDto);
   }
 
   @Delete(':id')
@@ -94,10 +97,11 @@ export class BoardController {
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   async remove(
-    @Param('id') id: number,
+    @Param() boardIdDto: BoardIdDto,
     @Token('sub') userId: number,
   ): Promise<{ message: string }> {
-    await this.boardService.removeBoard(id, userId);
+    const { boardId } = boardIdDto;
+    await this.boardService.removeBoard(boardId, userId);
     return { message: 'board가 성공적으로 삭제되었습니다.' };
   }
 }

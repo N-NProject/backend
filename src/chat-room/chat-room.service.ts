@@ -95,7 +95,7 @@ export class ChatRoomService {
     const userId = payload.userId || payload.sub;
 
     if (!userId) {
-      throw new UnauthorizedException('Invalid token or userId missing');
+      throw new UnauthorizedException('UserId를 찾을 수 없습니다');
     }
 
     const chatRoom = await this.chatRoomRepository.findOne({
@@ -104,7 +104,7 @@ export class ChatRoomService {
     });
 
     if (!chatRoom) {
-      throw new NotFoundException('Chat room not found');
+      throw new NotFoundException('ChatRoom을 찾을 수 없습니다');
     }
 
     this.currentCapacity[chatRoomId] =
@@ -135,7 +135,7 @@ export class ChatRoomService {
     });
 
     if (!chatRoom) {
-      throw new NotFoundException('Chat room not found');
+      throw new NotFoundException('ChatRoom을 찾을 수 없습니다');
     }
 
     if (!this.participants[chatRoom.id]) {
@@ -200,7 +200,7 @@ export class ChatRoomService {
       const payload = await this.jwtService.verifyAsync(token);
       return payload;
     } catch (err) {
-      throw new UnauthorizedException('Invalid token.');
+      throw new UnauthorizedException('토큰을 찾을 수 없습니다');
     }
   }
 
