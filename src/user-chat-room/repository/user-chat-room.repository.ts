@@ -27,6 +27,7 @@ export class CustomUserChatRoomRepository {
       .createQueryBuilder('userchatroom')
       .leftJoinAndSelect('userchatroom.chatRoom', 'chatRoom')
       .leftJoinAndSelect('chatRoom.board', 'board')
+      .leftJoinAndSelect('board.location', 'location')
       .where('userchatroom.user_id = :userId', { userId })
       .orderBy('userchatroom.id', 'DESC');
 

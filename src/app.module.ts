@@ -1,10 +1,10 @@
 import {
-  Module,
-  MiddlewareConsumer,
-  NestModule,
   Injectable,
-  NestMiddleware,
   Logger,
+  MiddlewareConsumer,
+  Module,
+  NestMiddleware,
+  NestModule,
 } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { ConfigModule } from '@nestjs/config';
@@ -18,7 +18,7 @@ import { LocationModule } from './location/location.module';
 import { ChatRoomModule } from './chat-room/chat-room.module';
 import { SseController } from './sse/sse.controller';
 import { SseModule } from './sse/sse.module';
-import { EventsModule } from './evnets/evnets.module';
+import { EventsModule } from './events/evnets.module';
 import { MessageService } from './message/message.service';
 import { MessageModule } from './message/message.module';
 

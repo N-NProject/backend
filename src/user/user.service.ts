@@ -7,6 +7,9 @@ import { UserResponseDto } from './dto/user.response.dto';
 import { CustomUserChatRoomRepository } from '../user-chat-room/repository/user-chat-room.repository';
 import { PagingParams } from '../global/common/type';
 import { CustomBoardRepository } from '../board/repository/board.repository';
+import { Board } from '../board/entities/board.entity';
+import { ChatRoom } from '../chat-room/entities/chat-room.entity';
+import { ChatRoomService } from '../chat-room/chat-room.service';
 
 @Injectable()
 export class UserService {
@@ -15,6 +18,7 @@ export class UserService {
     private readonly userRepository: Repository<User>,
     private readonly customUserChatRoomRepository: CustomUserChatRoomRepository,
     private readonly customBoardRepository: CustomBoardRepository,
+    private readonly chatRoomService: ChatRoomService,
   ) {}
 
   async getUserByKakaoId(kakaoId: number): Promise<User> {
@@ -110,30 +114,51 @@ export class UserService {
       pagingParams,
     );
 
-    const chatRoomsWithBoards = paginationResult.data
-      .map((userChatRoom) => {
-        const chatRoom = userChatRoom.chatRoom;
-        const board = chatRoom?.board;
+    const chatRoomsWithBoards = await Promise.all(
+      paginationResult.data.map(async (userChatRoom) => {
+        const chatRoom: ChatRoom = userChatRoom.chatRoom;
+        console.log(chatRoom);
+        const board: Board = chatRoom?.board;
+        console.log(board);
+        const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSED';
+        const currentPerson: number = chatRoom
+          ? await this.chatRoomService.getMemberCount(chatRoom.id)
+          : 0;
+
         return {
           id: chatRoom.id,
-          board: {
-            createdAt: board?.createdAt,
-            updatedAt: board?.updatedAt,
-            deletedAt: board?.deletedAt,
-            boardId: board?.id,
-            title: board?.title,
-            max_capacity: board?.max_capacity,
-            description: board?.description,
-            start_time: board?.start_time,
-            category: board?.category,
-            date: board?.date,
-          },
+          board: board
+            ? {
+                boardId: board.id,
+                title: board.title,
+                currentPerson,
+                max_capacity: board.max_capacity,
+                description: board.description,
+                start_time: board.start_time,
+                category: board.category,
+                location: {
+                  id: board.location.id,
+                  latitude: board.location.latitude,
+                  longitude: board.location.longitude,
+                  locationName: board.location.location_name,
+                },
+                date: board.date,
+                status,
+                createdAt: board.createdAt,
+                updatedAt: board.updatedAt,
+                deletedAt: board.deletedAt,
+              }
+            : undefined,
         };
-      })
-      .filter((item) => item.board.boardId !== undefined); // Filter out undefined boards
+      }),
+    );
+
+    const filteredChatRooms = chatRoomsWithBoards.filter(
+      (item) => item.board !== undefined,
+    );
 
     return {
-      chatRooms: chatRoomsWithBoards,
+      chatRooms: filteredChatRooms,
       cursor: paginationResult.cursor,
     };
   }

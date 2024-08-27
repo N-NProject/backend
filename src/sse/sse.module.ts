@@ -9,7 +9,7 @@ import { UserModule } from '../user/user.module';
 import { LocationModule } from '../location/location.module';
 import { ChatRoomModule } from '../chat-room/chat-room.module';
 import { BoardsModule } from '../board/board.module';
-import { EventsModule } from '../evnets/evnets.module';
+import { EventsModule } from '../events/evnets.module';
 import { MessageModule } from '../message/message.module';
 
 @Module({
