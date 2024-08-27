@@ -70,11 +70,12 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: '특정 게시물 조회' })
-  @Get(':id')
+  @Get(':boardId')
   async findOne(
     @Param() boardIdDto: BoardIdDto,
     @Token('sub') userId: number,
   ): Promise<BoardResponseDto> {
+    console.log('${boardId}가 있습니다', boardIdDto);
     const { boardId } = boardIdDto;
     return this.boardService.findOne(boardId, userId);
   }
@@ -82,9 +83,9 @@ export class BoardController {
   @ApiOperation({ summary: '게시물 업데이트' })
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Patch(':id')
+  @Patch(':boardId')
   async update(
-    @Param() boardIdDto: BoardIdDto, // <- 변경
+    @Param() boardIdDto: BoardIdDto,
     @Body(ValidationPipe) updateBoardDto: UpdateBoardDto,
     @Token('sub') userId: number,
   ): Promise<BoardResponseDto> {
@@ -92,7 +93,7 @@ export class BoardController {
     return this.boardService.updateBoard(boardId, userId, updateBoardDto);
   }
 
-  @Delete(':id')
+  @Delete(':boardId')
   @ApiOperation({ summary: '게시물 삭제' })
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
@@ -100,6 +101,7 @@ export class BoardController {
     @Param() boardIdDto: BoardIdDto,
     @Token('sub') userId: number,
   ): Promise<{ message: string }> {
+    console.log('${boardId}가 있습니다', boardIdDto);
     const { boardId } = boardIdDto;
     await this.boardService.removeBoard(boardId, userId);
     return { message: 'board가 성공적으로 삭제되었습니다.' };

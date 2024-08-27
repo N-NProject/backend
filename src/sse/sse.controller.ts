@@ -9,9 +9,9 @@ import { ApiTags } from '@nestjs/swagger';
 export class SseController {
   constructor(private readonly chatRoomService: ChatRoomService) {}
 
-  @Sse('board/:id')
+  @Sse('board/:boardId')
   async sse(
-    @Param('id') boardId: number,
+    @Param('boardId') boardId: number,
   ): Promise<Observable<{ data: string }>> {
     const roomUpdates$ =
       await this.chatRoomService.getRoomUpdatesByBoardId(boardId);

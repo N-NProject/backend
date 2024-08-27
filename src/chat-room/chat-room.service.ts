@@ -59,10 +59,11 @@ export class ChatRoomService {
       chatRoom = this.chatRoomRepository.create({
         board: board,
         chat_name: `보드 ${boardId} 채팅방`,
-        member_count: 0,
+        member_count: 1,
         max_member_count: board.max_capacity,
       });
       await this.chatRoomRepository.save(chatRoom);
+      this.currentCapacity[chatRoom.id] = 1;
     }
     return chatRoom;
   }
@@ -105,6 +106,10 @@ export class ChatRoomService {
 
     if (!chatRoom) {
       throw new NotFoundException('ChatRoom을 찾을 수 없습니다');
+    }
+
+    if (this.currentCapacity[chatRoomId] >= chatRoom.max_member_count) {
+      throw new UnauthorizedException('채팅방의 최대 인원이 초과되었습니다');
     }
 
     this.currentCapacity[chatRoomId] =
@@ -240,7 +245,7 @@ export class ChatRoomService {
     const roomUpdateSubject = this.getOrCreateRoomUpdate(chatRoomId);
 
     const sseResponse = new SseResponseDto();
-    sseResponse.currentPerson = this.currentCapacity[chatRoomId];
+    sseResponse.currentPerson = this.currentCapacity[chatRoomId] || 1;
     sseResponse.chatRoomId = chatRoomId;
 
     if (nickName) {

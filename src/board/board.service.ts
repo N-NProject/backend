@@ -82,15 +82,15 @@ export class BoardService {
       savedBoard.chat_room = chatRoom;
       await this.boardRepository.save(savedBoard);
 
-      await this.chatRoomService.joinChatRoom(chatRoom.id, token);
+      this.currentCapacity[savedBoard.id] = 1;
       this.logger.log(
-        `사용자 ${user.id}가 채팅방 ID: ${chatRoom.id}에 참가했습니다.`,
+        `사용자 ${user.id}가 채팅방 ID: ${chatRoom.id}에 참가했습니다. 초기 용량은 ${this.currentCapacity[savedBoard.id]}입니다.`,
       );
 
       return this.toBoardResponseDto(
         savedBoard,
         user.id,
-        this.currentCapacity[savedBoard.id] || 0,
+        this.currentCapacity[savedBoard.id],
       );
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
