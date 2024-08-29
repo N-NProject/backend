@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Logger,
+  Post,
   Query,
   Redirect,
   Req,
@@ -23,6 +24,9 @@ export class AuthController {
   private readonly redirect_uri: string;
 
   private readonly logger = new Logger(AuthController.name);
+
+  private readonly accessTokenPath = '/api/v1';
+  private readonly refreshTokenPath = '/api/v1/auth/redirect';
 
   constructor(
     private readonly config: ConfigService,
@@ -102,6 +106,14 @@ export class AuthController {
     this.setTokens(res, accessToken, refreshToken);
   }
 
+  @Post('logout')
+  async logout(@Res() res: Response) {
+    res.clearCookie('accessToken', { path: this.accessTokenPath });
+    res.clearCookie('refreshToken', { path: this.refreshTokenPath });
+
+    res.sendStatus(204);
+  }
+
   // 카카오 로그인 테스트 용도, 삭제 예정
   @Get()
   getTestHtml(@Res() res: Response): void {
@@ -122,20 +134,20 @@ export class AuthController {
       httpOnly: true,
       // secure: true, // HTTPS 사용 시 활성화
       sameSite: 'strict',
-      path: '/api/v1', // 쿠키가 /api/v1 경로에서만 유효
+      path: this.accessTokenPath, // 쿠키가 /api/v1 경로에서만 유효
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       // secure: true, // HTTPS 사용 시 활성화
       sameSite: 'strict',
-      path: '/api/v1/auth/redirect', // 쿠키가 /api/v1/auth/redirect 경로에서만 유효
+      path: this.refreshTokenPath, // 쿠키가 /api/v1/auth/redirect 경로에서만 유효
     });
 
     this.logger.log(
       `Tokens issued - Access Token: ${accessToken}, Refresh Token: ${refreshToken}`,
     );
 
-    res.sendStatus(200);
+    res.sendStatus(204);
   }
 }
