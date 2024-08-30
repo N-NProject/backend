@@ -101,6 +101,14 @@ export class ChatRoomService {
       throw new NotFoundException('Chat room not found');
     }
 
+    //동일한 유저가 이미 같은 chatRoomId에 들어가 있는지 확인
+    if (
+      this.participants[chatRoomId] &&
+      this.participants[chatRoomId].has(userId)
+    ) {
+      throw new Error('user가 이미 방에 들어가있습니다.');
+    }
+
     this.currentCapacity[chatRoomId] =
       (this.currentCapacity[chatRoomId] || 0) + 1;
 
