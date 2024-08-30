@@ -16,6 +16,7 @@ import { EventsGateway } from '../events/events.gateway';
 import { JwtService } from '@nestjs/jwt';
 import { SseResponseDto } from '../sse/dto/sse-response.dto';
 import { Observable, Subject } from 'rxjs';
+import { BoardService } from '../board/board.service';
 
 @Injectable()
 export class ChatRoomService {
@@ -33,6 +34,8 @@ export class ChatRoomService {
     private readonly messageRepository: Repository<Message>,
     @InjectRepository(Board)
     private readonly boardRepository: Repository<Board>,
+    @Inject(forwardRef(() => BoardService))
+    private readonly boardService: BoardService,
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
     private readonly jwtService: JwtService,
@@ -230,18 +233,18 @@ export class ChatRoomService {
   }
 
   public async findChatRoomByBoardId(boardId: number): Promise<ChatRoom> {
-  return this.chatRoomRepository.findOne({
-    where: { board: { id: boardId } },
-  });
-}
+    return this.chatRoomRepository.findOne({
+      where: { board: { id: boardId } },
+    });
+  }
 
- /* 채팅방 현재 인원 조회 */
-async getMemberCount(chatRoomId: number): Promise<number> {
-  const chatRoom = await this.chatRoomRepository.findOne({
-    where: { id: chatRoomId },
-  });
-  return chatRoom ? chatRoom.member_count : 0;
-}
+  /* 채팅방 현재 인원 조회 */
+  async getMemberCount(chatRoomId: number): Promise<number> {
+    const chatRoom = await this.chatRoomRepository.findOne({
+      where: { id: chatRoomId },
+    });
+    return chatRoom ? chatRoom.member_count : 0;
+  }
 
   private notifyMemberCountChange(chatRoomId: number, nickName?: string): void {
     const roomUpdateSubject = this.getOrCreateRoomUpdate(chatRoomId);

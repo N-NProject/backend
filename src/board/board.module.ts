@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BoardService } from './board.service';
 import { BoardController } from './board.controller';
@@ -13,7 +13,7 @@ import { Message } from '../message/entities/message.entity';
     TypeOrmModule.forFeature([Board, Message]),
     UserModule,
     LocationModule,
-    ChatRoomModule,
+    forwardRef(() => ChatRoomModule),
   ],
   controllers: [BoardController],
   providers: [BoardService],
