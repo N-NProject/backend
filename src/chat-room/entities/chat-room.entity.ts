@@ -31,7 +31,7 @@ export class ChatRoom extends TimeStamp {
   max_member_count: number;
 
   @OneToOne(() => Board, (board) => board.chat_room, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'boardId' })
+  @JoinColumn()
   board: Board;
 
   @OneToMany(() => UserChatRoom, (userChatRoom) => userChatRoom.chatRoom)
