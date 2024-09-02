@@ -80,12 +80,13 @@ export class ChatRoomService {
     return chatRoom;
   }
 
-  async joinChatRoomByBoardId(boardId: number, token: string): Promise<void> {
+  async joinChatRoomByBoardId(boardId: number, token: string): Promise<number> {
     const chatRoom = await this.findChatRoomByBoardId(boardId);
     if (!chatRoom) {
       throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
-    return this.joinChatRoom(chatRoom.id, token);
+    await this.joinChatRoom(chatRoom.id, token);
+    return chatRoom.id;
   }
 
   async joinChatRoom(chatRoomId: number, token: string): Promise<void> {
@@ -105,20 +106,26 @@ export class ChatRoomService {
       throw new NotFoundException('ChatRoom을 찾을 수 없습니다');
     }
 
-    if (this.currentCapacity[chatRoomId] >= chatRoom.max_member_count) {
-      throw new UnauthorizedException('채팅방의 최대 인원이 초과되었습니다');
+    if (
+      this.currentCapacity[chatRoomId] === undefined ||
+      isNaN(this.currentCapacity[chatRoomId])
+    ) {
+      this.currentCapacity[chatRoomId] = chatRoom.member_count;
+      this.logger.log(
+        `Initial currentCapacity for chatRoom ${chatRoomId} set to ${this.currentCapacity[chatRoomId]}`,
+      );
     }
 
-    //동일한 유저가 이미 같은 chatRoomId에 들어가 있는지 확인
-    if (
-      this.participants[chatRoomId] &&
-      this.participants[chatRoomId].has(userId)
-    ) {
+    // 동일한 유저가 이미 같은 chatRoomId에 들어가 있는지 확인
+    if (this.participants[chatRoomId]?.has(userId)) {
       throw new Error('user가 이미 방에 들어가있습니다.');
     }
 
-    this.currentCapacity[chatRoomId] =
-      (this.currentCapacity[chatRoomId] || 0) + 1;
+    // 인원 증가
+    this.currentCapacity[chatRoomId] += 1;
+    this.logger.log(
+      `currentCapacity for chatRoom ${chatRoomId} increased to ${this.currentCapacity[chatRoomId]}`,
+    );
 
     this.participants[chatRoomId] =
       this.participants[chatRoomId] || new Set<number>();
@@ -126,7 +133,7 @@ export class ChatRoomService {
 
     const user = await this.getUser(userId);
 
-    chatRoom.member_count += 1;
+    chatRoom.member_count = this.currentCapacity[chatRoomId];
     await this.chatRoomRepository.save(chatRoom);
 
     this.notifyMemberCountChange(chatRoom.id, user.username);
@@ -139,7 +146,10 @@ export class ChatRoomService {
     await this.boardService.handleBoardUpdate(chatRoom.board.id);
   }
 
-  async leaveChatRoomByBoardId(boardId: number, userId: number): Promise<void> {
+  async leaveChatRoomByBoardId(
+    boardId: number,
+    userId: number,
+  ): Promise<number> {
     const chatRoom = await this.chatRoomRepository.findOne({
       where: { board: { id: boardId } },
     });
@@ -152,24 +162,40 @@ export class ChatRoomService {
       this.participants[chatRoom.id] = new Set<number>();
     }
 
-    console.log(`Before decrement: ${this.currentCapacity[chatRoom.id]}`);
+    if (
+      this.currentCapacity[chatRoom.id] === undefined ||
+      isNaN(this.currentCapacity[chatRoom.id])
+    ) {
+      this.currentCapacity[chatRoom.id] = chatRoom.member_count;
+      this.logger.log(
+        `Initial currentCapacity for chatRoom ${chatRoom.id} set to ${this.currentCapacity[chatRoom.id]}`,
+      );
+    }
+
+    //인원감소
     this.currentCapacity[chatRoom.id] = Math.max(
-      (this.currentCapacity[chatRoom.id] || 1) - 1,
+      this.currentCapacity[chatRoom.id] - 1,
       0,
     );
-    console.log(`After decrement: ${this.currentCapacity[chatRoom.id]}`);
+    this.logger.log(
+      `currentCapacity for chatRoom ${chatRoom.id} decreased to ${this.currentCapacity[chatRoom.id]}`,
+    );
 
     this.participants[chatRoom.id].delete(userId);
 
     const user = await this.getUser(userId);
+
+    chatRoom.member_count = this.currentCapacity[chatRoom.id];
+    await this.chatRoomRepository.save(chatRoom);
+
     this.notifyMemberCountChange(chatRoom.id, user.username);
 
-    // Log 추가
     this.logger.log(
       `User ${userId} left chat room ID: ${chatRoom.id}. Current count: ${this.currentCapacity[chatRoom.id]}`,
     );
-  }
 
+    return chatRoom.id;
+  }
   async sendMessage(
     chatRoomId: number,
     userId: number,
@@ -233,7 +259,7 @@ export class ChatRoomService {
 
   // 특정 boardId에 대한 currentPerson 값을 반환하는 메서드
   public async getCurrentCapacityForBoard(boardId: number): Promise<number> {
-    const chatRoom = await this.findChatRoomByBoardId(boardId); // await 사용
+    const chatRoom = await this.findChatRoomByBoardId(boardId);
     if (chatRoom) {
       return this.currentCapacity[chatRoom.id] || 0;
     }
