@@ -112,5 +112,5 @@ export class BoardResponseDto {
 
   @ApiProperty()
   @IsNotEmpty()
-  editable: boolean;
+  editable?: boolean;
 }

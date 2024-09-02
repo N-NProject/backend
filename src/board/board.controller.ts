@@ -28,6 +28,7 @@ import { Token } from '../auth/auth.decorator';
 import { PaginationParamsDto } from './dto/pagination-params.dto';
 import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
 import { BoardIdDto } from './dto/boardId.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @ApiTags('Boards')
 @Controller('api/v1/boards')
@@ -73,13 +74,32 @@ export class BoardController {
   @Get(':boardId')
   async findOne(
     @Param() boardIdDto: BoardIdDto,
-    @Token('sub') userId: number,
+    @Req() req: Request,
   ): Promise<BoardResponseDto> {
-    console.log('${boardId}가 있습니다', boardIdDto);
     const { boardId } = boardIdDto;
+
+    // 쿠키에서 JWT 토큰을 추출
+    const token = req.cookies['accessToken'];
+
+    if (!token) {
+      throw new UnauthorizedException('JWT 토큰이 쿠키에 없습니다.');
+    }
+
+    // JwtService를 이용해 토큰 디코딩
+    const jwtService = new JwtService({ secret: 'JWT_SECRET' });
+    const decodedToken = jwtService.decode(token) as any;
+
+    // sub 클레임에서 userId 추출
+    const userId = decodedToken?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('유효한 사용자 ID가 아닙니다.');
+    }
+
+    console.log(`${boardId}가 있습니다`, boardIdDto);
+    console.log(`userId: ${userId}`); // userId 로그 출력
+
     return this.boardService.findOne(boardId, userId);
   }
-
   @ApiOperation({ summary: '게시물 업데이트' })
   @ApiBearerAuth()
   @UseGuards(AuthGuard)

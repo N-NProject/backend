@@ -12,7 +12,7 @@ import { UpdateBoardDto } from './dto/update-board';
 import { UserService } from '../user/user.service';
 import { LocationService } from '../location/location.service';
 import { ChatRoomService } from '../chat-room/chat-room.service';
-import { Observable, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { BoardResponseDto } from './dto/board-response.dto';
 import { Location } from '../location/entities/location.entity';
 import { SseResponseDto } from '../sse/dto/sse-response.dto';
@@ -26,8 +26,8 @@ import { Message } from '../message/entities/message.entity';
 @Injectable()
 export class BoardService {
   private readonly logger = new Logger(BoardService.name);
-  private boardUpdates: { [key: number]: Subject<SseResponseDto> } = {}; // SSE updates management
-  private currentCapacity: { [key: number]: number } = {}; // Track current capacity
+  private boardUpdates: { [key: number]: Subject<SseResponseDto> } = {};
+  private currentCapacity: { [key: number]: number } = {};
 
   constructor(
     @InjectRepository(Board)
@@ -148,13 +148,9 @@ export class BoardService {
       throw new NotFoundException(`ID가 ${id}인 게시판을 찾을 수 없습니다.`);
     }
 
-    if (!this.boardUpdates[id]) {
-      this.boardUpdates[id] = new Subject<SseResponseDto>();
-    }
-
     const currentCapacity =
       await this.chatRoomService.getCurrentCapacityForBoard(id);
-    this.currentCapacity[id] = currentCapacity;
+    const editable = board.user.id === userId;
 
     return this.toBoardResponseDto(board, userId, currentCapacity);
   }
@@ -243,7 +239,7 @@ export class BoardService {
 
   public toBoardResponseDto(
     board: Board,
-    userId: number,
+    userId: number | undefined,
     currentCapacity: number,
   ): BoardResponseDto {
     const {
@@ -262,9 +258,9 @@ export class BoardService {
     } = board;
 
     const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSE';
-    const editable = user.id === userId;
 
-    return {
+    // 기본 response 객체 생성 (editable 없이)
+    const response: BoardResponseDto = {
       id,
       title,
       maxCapacity: max_capacity,
@@ -283,9 +279,15 @@ export class BoardService {
       updatedAt,
       deletedAt,
       status,
-      editable,
-      user: userId ? { userId: user.id, username: user.username } : undefined,
+      user: user ? { userId: user.id, username: user.username } : undefined,
     };
+
+    // userId가 있는 경우에만 editable을 추가
+    if (userId !== undefined) {
+      response.editable = user.id === userId;
+    }
+
+    return response;
   }
 
   private async getOrCreateLocation(
