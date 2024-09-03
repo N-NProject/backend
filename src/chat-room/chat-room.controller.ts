@@ -51,7 +51,12 @@ export class ChatRoomController {
       throw new UnauthorizedException('JWT token is missing');
     }
 
-    return this.chatRoomService.joinChatRoomByBoardId(boardId, token);
+    const chatRoomId = await this.chatRoomService.joinChatRoomByBoardId(
+      boardId,
+      token,
+    );
+
+    return { chatRoomId };
   }
 
   //메세지 전송
@@ -119,9 +124,9 @@ export class ChatRoomController {
   @ApiBearerAuth()
   @ApiOperation({ summary: '채팅방 나가기' })
   @Delete(':boardId/leave')
-  @HttpCode(204)
+  @HttpCode(200)
   async leaveChatRoom(
-    @Token('sub') id: number, // 토큰에서 userId 추출
+    @Token('sub') id: number,
     @Param('boardId', ParseIntPipe) boardId: number,
     @Req() request: Request,
   ) {
@@ -134,6 +139,11 @@ export class ChatRoomController {
       throw new UnauthorizedException('JWT token is missing');
     }
 
-    return this.chatRoomService.leaveChatRoomByBoardId(boardId, id);
+    const chatRoomId = await this.chatRoomService.leaveChatRoomByBoardId(
+      boardId,
+      id,
+    );
+
+    return { chatRoomId };
   }
 }
