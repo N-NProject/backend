@@ -179,6 +179,7 @@ export class ChatRoomService {
     client.join(chatRoomId);
   }
 
+  // FIXME: 채팅방 인원이 최대 인원보다 넘치면 참여하지 못하도록 에러처리
   async joinChatRoom(chatRoomId: number, userId: number): Promise<void> {
     const chatRoom = await this.chatRoomRepository.findOne({
       where: { id: chatRoomId },
@@ -240,5 +241,38 @@ export class ChatRoomService {
     this.eventsGateway.log(
       `사용자 ${userId} 님이 방 ${chatRoomId}에서 나갔습니다.`,
     );
+  }
+
+  /* boardId로 채팅방 조회 */
+  async findChatRoomByBoardId(boardId: number): Promise<ChatRoom | null> {
+    return this.chatRoomRepository.findOne({
+      where: { board: { id: boardId } },
+    });
+  }
+
+  /* 채팅방 인원 증가 */
+  async incrementMemberCount(chatRoomId: number): Promise<void> {
+    await this.chatRoomRepository.increment(
+      { id: chatRoomId },
+      'member_count',
+      1,
+    );
+  }
+
+  /* 채팅방 인원 감소 */
+  async decrementMemberCount(chatRoomId: number): Promise<void> {
+    await this.chatRoomRepository.decrement(
+      { id: chatRoomId },
+      'member_count',
+      1,
+    );
+  }
+
+  /* 채팅방 현재 인원 조회 */
+  async getMemberCount(chatRoomId: number): Promise<number> {
+    const chatRoom = await this.chatRoomRepository.findOne({
+      where: { id: chatRoomId },
+    });
+    return chatRoom ? chatRoom.member_count : 0;
   }
 }

@@ -19,8 +19,7 @@ import { SseResponseDto } from '../sse/dto/sse-response.dto';
 import { PaginationParamsDto } from './dto/pagination-params.dto';
 import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '../user/entities/user.entity';
-import e from 'express';
+import { ChatRoom } from '../chat-room/entities/chat-room.entity';
 
 @Injectable()
 export class BoardService {
@@ -95,7 +94,17 @@ export class BoardService {
     });
 
     const totalPage = Math.ceil(totalCount / limit);
-    const data = boards.map((board) => this.toBoardResponseDto(board));
+    const data = await Promise.all(
+      boards.map(async (board) => {
+        const chatRoom = await this.chatRoomService.findChatRoomByBoardId(
+          board.id,
+        );
+        const currentPerson = chatRoom
+          ? await this.chatRoomService.getMemberCount(chatRoom.id)
+          : 0;
+        return this.toBoardResponseDto(board, undefined, currentPerson);
+      }),
+    );
 
     return {
       data,
@@ -182,7 +191,8 @@ export class BoardService {
     return this.currentCapacity[boardId] || 0;
   }
 
-  async userAcessBoard(boardId: number, token: string) {
+  /* 게시글 참여 */
+  async userAccessBoard(boardId: number, token: string): Promise<void> {
     let payload;
     try {
       payload = await this.jwtService.verifyAsync(token);
@@ -206,24 +216,34 @@ export class BoardService {
     if (!this.boardUpdates[boardId]) {
       this.boardUpdates[boardId] = new Subject<SseResponseDto>();
     }
-    if (!this.currentCapacity[boardId]) {
-      this.currentCapacity[boardId] = 0;
-    }
+    // if (!this.currentCapacity[boardId]) {
+    //   this.currentCapacity[boardId] = 0;
+    // }
     if (!this.participants[boardId]) {
       this.participants[boardId] = new Set<string>(); // Set<number> -> Set<string>
     }
 
     if (this.participants[boardId].has(token)) {
+      // 채팅방 참여자 토큰값
       throw new Error(`User는 이미 board ${boardId}에 참가했습니다`);
     }
 
     this.participants[boardId].add(token);
 
-    if (this.currentCapacity[boardId] >= board.max_capacity) {
+    // 채팅방 인원 증가: ChatRoom의 member_count 업데이트
+    const chatRoom: ChatRoom =
+      await this.chatRoomService.findChatRoomByBoardId(boardId);
+    if (!chatRoom) {
+      throw new NotFoundException(
+        `board ${boardId}에 연결된 채팅방을 찾을 수 없습니다`,
+      );
+    }
+
+    if (chatRoom.member_count >= board.max_capacity) {
       throw new Error('제한 인원이 다 찼습니다');
     }
 
-    this.currentCapacity[boardId] += 1;
+    await this.chatRoomService.incrementMemberCount(chatRoom.id);
 
     this.logger.log(
       `Token ${token}가 board ${boardId}에 접근했습니다. 현재 인원: ${this.currentCapacity[boardId]}`,
@@ -237,7 +257,7 @@ export class BoardService {
     this.boardUpdates[boardId].next(sseResponse);
   }
 
-  async userLeaveBoard(boardId: number, token: string) {
+  async userLeaveBoard(boardId: number, token: string): Promise<void> {
     let payload;
     try {
       payload = await this.jwtService.verifyAsync(token);
@@ -274,10 +294,11 @@ export class BoardService {
 
     this.participants[boardId].delete(token);
 
-    if (this.currentCapacity[boardId] > 0) {
-      this.currentCapacity[boardId] -= 1;
-    } else {
-      this.currentCapacity[boardId] = 0;
+    // 채팅방 인원 감소: ChatRoom의 member_count 업데이트
+    const chatRoom: ChatRoom =
+      await this.chatRoomService.findChatRoomByBoardId(boardId);
+    if (chatRoom) {
+      await this.chatRoomService.decrementMemberCount(chatRoom.id);
     }
 
     this.logger.log(
@@ -292,14 +313,18 @@ export class BoardService {
     this.boardUpdates[boardId].next(sseResponse);
   }
 
-  public toBoardResponseDto(board: Board, userId?: number): BoardResponseDto {
+  public toBoardResponseDto(
+    board: Board,
+    userId?: number,
+    currentPerson: number = 0,
+  ): BoardResponseDto {
     const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSED';
 
     const response: BoardResponseDto = {
       id: board.id,
       title: board.title,
       maxCapacity: board.max_capacity,
-      currentPerson: this.currentCapacity[board.id] || 0,
+      currentPerson,
       description: board.description,
       startTime: board.start_time,
       date: board.date,

@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   Query,
-  Req,
   UnauthorizedException,
   UseGuards,
   ValidationPipe,
@@ -123,12 +122,12 @@ export class BoardController {
   })
   async accessBoard(
     @Param('id') id: number,
-    @Body('token') token: string,
+    @Body('token') token: string, // FIXME: 토큰은 쿠키에서 전달되므로 body로 받지 않도록 수정
   ): Promise<{ message: string }> {
     if (!token) {
       throw new UnauthorizedException('Token is missing');
     }
-    await this.boardService.userAcessBoard(id, token);
+    await this.boardService.userAccessBoard(id, token);
     return { message: '게시물에 참가자가 참여했습니다' };
   }
 
