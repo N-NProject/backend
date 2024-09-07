@@ -17,6 +17,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SseResponseDto } from '../sse/dto/sse-response.dto';
 import { Observable, Subject } from 'rxjs';
 import { BoardService } from '../board/board.service';
+import { UserChatRoom } from 'src/user-chat-room/entities/user-chat-room.entity';
 
 @Injectable()
 export class ChatRoomService {
@@ -34,6 +35,8 @@ export class ChatRoomService {
     private readonly messageRepository: Repository<Message>,
     @InjectRepository(Board)
     private readonly boardRepository: Repository<Board>,
+    @InjectRepository(UserChatRoom)
+    private userChatRoomRepository: Repository<UserChatRoom>,
     @Inject(forwardRef(() => BoardService))
     private readonly boardService: BoardService,
     @Inject(forwardRef(() => EventsGateway))
@@ -80,32 +83,23 @@ export class ChatRoomService {
     return chatRoom;
   }
 
-  async joinChatRoomByBoardId(boardId: number, token: string): Promise<number> {
-    const chatRoom = await this.findChatRoomByBoardId(boardId);
-    if (!chatRoom) {
-      throw new NotFoundException('채팅방을 찾을 수 없습니다.');
-    }
-    await this.joinChatRoom(chatRoom.id, token);
-    return chatRoom.id;
-  }
-
-  async joinChatRoom(chatRoomId: number, token: string): Promise<void> {
-    const payload = await this.verifyToken(token);
-    const userId = payload.userId || payload.sub;
-
+  async joinChatRoomByBoardId(
+    boardId: number,
+    userId: number,
+  ): Promise<number> {
     if (!userId) {
       throw new UnauthorizedException('UserId를 찾을 수 없습니다');
     }
 
-    const chatRoom = await this.chatRoomRepository.findOne({
-      where: { id: chatRoomId },
-      relations: ['board'],
-    });
+    const chatRoom = await this.findChatRoomByBoardId(boardId);
 
     if (!chatRoom) {
-      throw new NotFoundException('ChatRoom을 찾을 수 없습니다');
+      throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
 
+    const chatRoomId = chatRoom.id;
+
+    //
     if (
       this.currentCapacity[chatRoomId] === undefined ||
       isNaN(this.currentCapacity[chatRoomId])
@@ -117,9 +111,20 @@ export class ChatRoomService {
     }
 
     // 동일한 유저가 이미 같은 chatRoomId에 들어가 있는지 확인
-    if (this.participants[chatRoomId]?.has(userId)) {
+    const userChatRoom = chatRoom.userChatRooms.find(
+      (userChatRoom) => userChatRoom.user.id == userId,
+    );
+
+    if (userChatRoom) {
       throw new Error('user가 이미 방에 들어가있습니다.');
     }
+
+    const newUserChatRoom = this.userChatRoomRepository.create({
+      chatRoom: chatRoom,
+      user: { id: userId },
+    });
+
+    this.userChatRoomRepository.save(newUserChatRoom);
 
     // 인원 증가
     this.currentCapacity[chatRoomId] += 1;
@@ -136,14 +141,17 @@ export class ChatRoomService {
     chatRoom.member_count = this.currentCapacity[chatRoomId];
     await this.chatRoomRepository.save(chatRoom);
 
-    this.notifyMemberCountChange(chatRoom.id, user.username);
+    this.notifyMemberCountChange(chatRoomId, user.username);
 
     this.logger.log(
       `User ${userId} joined chat room ID: ${chatRoomId}. Current count: ${this.currentCapacity[chatRoomId]}`,
     );
 
     // BoardService에 알림
-    await this.boardService.handleBoardUpdate(chatRoom.board.id);
+    await this.boardService.handleBoardUpdate(boardId);
+
+    //
+    return chatRoomId;
   }
 
   async leaveChatRoomByBoardId(
@@ -187,6 +195,11 @@ export class ChatRoomService {
 
     chatRoom.member_count = this.currentCapacity[chatRoom.id];
     await this.chatRoomRepository.save(chatRoom);
+
+    this.userChatRoomRepository.delete({
+      chatRoom: chatRoom,
+      user: { id: userId },
+    });
 
     this.notifyMemberCountChange(chatRoom.id, user.username);
 
@@ -269,6 +282,7 @@ export class ChatRoomService {
   public async findChatRoomByBoardId(boardId: number): Promise<ChatRoom> {
     return this.chatRoomRepository.findOne({
       where: { board: { id: boardId } },
+      relations: ['userChatRooms', 'userChatRooms.user'],
     });
   }
 
