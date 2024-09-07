@@ -42,18 +42,12 @@ export class ChatRoomController {
   async accessChatRoom(
     @Token('sub') id: number,
     @Param('boardId', ParseIntPipe) boardId: number,
-    @Req() request: Request,
   ) {
     this.logger.log(`User ${id} is joining chat room for board ${boardId}`);
 
-    const token = request.cookies['accessToken'];
-    if (!token) {
-      throw new UnauthorizedException('JWT token is missing');
-    }
-
     const chatRoomId = await this.chatRoomService.joinChatRoomByBoardId(
       boardId,
-      token,
+      id,
     );
 
     return { chatRoomId };
@@ -128,16 +122,10 @@ export class ChatRoomController {
   async leaveChatRoom(
     @Token('sub') id: number,
     @Param('boardId', ParseIntPipe) boardId: number,
-    @Req() request: Request,
   ) {
     this.logger.log(
       `User ${id} is leaving chat room associated with board ${boardId}`,
     );
-
-    const token = request.cookies['accessToken'];
-    if (!token) {
-      throw new UnauthorizedException('JWT token is missing');
-    }
 
     const chatRoomId = await this.chatRoomService.leaveChatRoomByBoardId(
       boardId,
