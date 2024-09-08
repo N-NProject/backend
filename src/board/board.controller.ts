@@ -61,13 +61,9 @@ export class BoardController {
   @Post()
   async create(
     @Body(ValidationPipe) createBoardDto: CreateBoardDto,
-    @Req() request: Request, // Request 객체를 사용하여 쿠키에서 토큰 추출
+    @Token('sub') id: number,
   ): Promise<BoardResponseDto> {
-    const token = request.cookies?.accessToken; // 안전하게 접근하도록 수정
-    if (!token) {
-      throw new UnauthorizedException('JWT token is missing');
-    }
-    return this.boardService.createBoard(createBoardDto, request);
+    return this.boardService.createBoard(createBoardDto, id);
   }
 
   @ApiOperation({ summary: '특정 게시물 조회' })

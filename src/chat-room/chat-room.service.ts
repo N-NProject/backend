@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { ChatRoom } from './entities/chat-room.entity';
 import { User } from '../user/entities/user.entity';
 import { Message } from '../message/entities/message.entity';
@@ -44,28 +44,32 @@ export class ChatRoomService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async findOrCreateChatRoom(boardId: number): Promise<ChatRoom> {
-    let chatRoom = await this.chatRoomRepository.findOne({
-      where: { board: { id: boardId } },
+  /** 게시글에 해당하는 채팅방 생성 */
+  async createChatRoomForBoard(
+    queryRunner: QueryRunner,
+    board: Board,
+    user: User,
+  ): Promise<ChatRoom> {
+    const chatRoom: ChatRoom = queryRunner.manager.create(ChatRoom, {
+      board: board,
+      chat_name: `보드 ${board.id} 채팅방`,
+      member_count: 1,
+      max_member_count: board.max_capacity,
     });
-    if (!chatRoom) {
-      const board = await this.boardRepository.findOne({
-        where: { id: boardId },
-      });
-      if (!board) {
-        throw new NotFoundException('Board not found');
-      }
+    const savedChatRoom = await queryRunner.manager.save(chatRoom);
+    this.currentCapacity[savedChatRoom.id] = 1;
 
-      chatRoom = this.chatRoomRepository.create({
-        board: board,
-        chat_name: `보드 ${boardId} 채팅방`,
-        member_count: 1,
-        max_member_count: board.max_capacity,
-      });
-      await this.chatRoomRepository.save(chatRoom);
-      this.currentCapacity[chatRoom.id] = 1;
-    }
-    return chatRoom;
+    // 게시글 작성자를 채팅방에 추가
+    const userChatRoom: UserChatRoom = queryRunner.manager.create(
+      UserChatRoom,
+      {
+        user: user,
+        chatRoom: savedChatRoom,
+      },
+    );
+    await queryRunner.manager.save(userChatRoom);
+
+    return savedChatRoom;
   }
 
   async getChatRooms(): Promise<ChatRoom[]> {
@@ -209,6 +213,7 @@ export class ChatRoomService {
 
     return chatRoom.id;
   }
+
   async sendMessage(
     chatRoomId: number,
     userId: number,

@@ -1,15 +1,16 @@
 import {
+  ConflictException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, DeepPartial, Repository } from 'typeorm';
 import { Board } from './entities/board.entity';
 import { CreateBoardDto } from './dto/create-board';
 import { UpdateBoardDto } from './dto/update-board';
-import { UserService } from '../user/user.service';
 import { LocationService } from '../location/location.service';
 import { ChatRoomService } from '../chat-room/chat-room.service';
 import { Subject } from 'rxjs';
@@ -18,10 +19,9 @@ import { Location } from '../location/entities/location.entity';
 import { SseResponseDto } from '../sse/dto/sse-response.dto';
 import { PaginationParamsDto } from './dto/pagination-params.dto';
 import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
-import { JwtService } from '@nestjs/jwt';
-import { Request } from 'express';
-import { DeepPartial } from 'typeorm';
 import { Message } from '../message/entities/message.entity';
+import { User } from '../user/entities/user.entity';
+import { ChatRoom } from '../chat-room/entities/chat-room.entity';
 
 @Injectable()
 export class BoardService {
@@ -32,36 +32,38 @@ export class BoardService {
   constructor(
     @InjectRepository(Board)
     private readonly boardRepository: Repository<Board>,
-    private readonly userService: UserService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,
     private readonly locationService: LocationService,
     private readonly chatRoomService: ChatRoomService,
-    private readonly jwtService: JwtService,
+    private dataSource: DataSource,
   ) {}
 
   async createBoard(
     createBoardDto: CreateBoardDto,
-    request: Request,
+    userId: number,
   ): Promise<BoardResponseDto> {
-    const token = request.cookies['accessToken'];
+    const queryRunner = this.dataSource.createQueryRunner();
 
-    if (!token) {
-      throw new UnauthorizedException('JWT 토큰이 없습니다.');
-    }
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
     try {
-      const payload = await this.jwtService.verifyAsync(token);
-      const user = await this.userService.findOne(payload.sub);
+      const user: User = await queryRunner.manager.findOne(User, {
+        where: { id: userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
 
-      this.logger.log(`사용자 ID: ${user.id}에 대한 JWT 토큰을 받았습니다.`);
-
-      const newLocation = await this.getOrCreateLocation(
+      const newLocation: Location = await this.getOrCreateLocation(
         createBoardDto.location,
         createBoardDto.locationName,
       );
 
-      const board = this.boardRepository.create({
+      const board: Board = this.boardRepository.create({
         user,
         ...createBoardDto,
         location: newLocation as DeepPartial<Location>,
@@ -69,39 +71,47 @@ export class BoardService {
         start_time: createBoardDto.startTime,
       });
 
-      const savedBoard = await this.boardRepository.save(board);
-      this.logger.log(`게시판이 생성되었습니다. ID: ${savedBoard.id}`);
+      const savedBoard: Board = await queryRunner.manager.save(board);
 
-      const chatRoom = await this.chatRoomService.findOrCreateChatRoom(
-        savedBoard.id,
-      );
-      this.logger.log(
-        `게시판 ID: ${savedBoard.id}와 연결된 채팅방이 생성되었습니다.`,
-      );
+      // 채팅방 생성 로직을 트랜잭션 내부로 이동
+      const chatRoom: ChatRoom =
+        await this.chatRoomService.createChatRoomForBoard(
+          queryRunner,
+          savedBoard,
+          user,
+        );
 
+      // Board에 ChatRoom을 연결
       savedBoard.chat_room = chatRoom;
-      await this.boardRepository.save(savedBoard);
+      await queryRunner.manager.save(savedBoard);
 
-      this.currentCapacity[savedBoard.id] = 1;
+      await queryRunner.commitTransaction();
+
       this.logger.log(
-        `사용자 ${user.id}가 채팅방 ID: ${chatRoom.id}에 참가했습니다. 초기 용량은 ${this.currentCapacity[savedBoard.id]}입니다.`,
+        `게시판과 채팅방이 생성되었습니다. Board ID: ${savedBoard.id}, ChatRoom ID: ${chatRoom.id}`,
       );
+
+      console.log(chatRoom.member_count);
 
       return this.toBoardResponseDto(
         savedBoard,
         user.id,
-        this.currentCapacity[savedBoard.id],
+        chatRoom.member_count, // 채팅방의 현재 인원수를 보여주도록 했으나, currentCapacity 객체의 값이 필요해지면 변경이 필요함.
       );
-    } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        this.logger.error('토큰이 만료되었습니다:', error);
-        throw new UnauthorizedException(
-          '세션이 만료되었습니다. 다시 로그인 해주세요.',
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      if (err.code === '23505') {
+        this.logger.error('중복된 ChatRoom 연결 시도', err.stack);
+        throw new ConflictException(
+          '이 게시판에는 이미 채팅방이 연결되어 있습니다.',
         );
-      } else {
-        this.logger.error('게시판 생성 중 오류가 발생했습니다:', error);
-        throw new UnauthorizedException('유효하지 않은 토큰입니다.');
       }
+      this.logger.error('게시판 생성 중 오류가 발생했습니다', err.stack);
+      throw new InternalServerErrorException(
+        '게시판을 생성하는 중 오류가 발생했습니다',
+      );
+    } finally {
+      await queryRunner.release();
     }
   }
 
