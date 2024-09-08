@@ -10,8 +10,6 @@ import {
   Logger,
   NotFoundException,
   ParseIntPipe,
-  Req,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { ChatRoomService } from './chat-room.service';
 import { AuthGuard } from '../auth/auth.guard';
@@ -19,7 +17,7 @@ import { Token } from '../auth/auth.decorator';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { UserService } from '../user/user.service';
-import { Request } from 'express';
+import { BoardIdDto } from './dto/board-id.dto';
 
 @ApiTags('Chat-rooms')
 @Controller('api/v1/chatrooms')
@@ -41,8 +39,10 @@ export class ChatRoomController {
   @HttpCode(200)
   async accessChatRoom(
     @Token('sub') id: number,
-    @Param('boardId', ParseIntPipe) boardId: number,
+    @Param() boardIdDto: BoardIdDto,
   ) {
+    const { boardId } = boardIdDto;
+
     this.logger.log(`User ${id} is joining chat room for board ${boardId}`);
 
     const chatRoomId = await this.chatRoomService.joinChatRoomByBoardId(
@@ -121,8 +121,10 @@ export class ChatRoomController {
   @HttpCode(200)
   async leaveChatRoom(
     @Token('sub') id: number,
-    @Param('boardId', ParseIntPipe) boardId: number,
+    @Param() boardIdDto: BoardIdDto,
   ) {
+    const { boardId } = boardIdDto;
+
     this.logger.log(
       `User ${id} is leaving chat room associated with board ${boardId}`,
     );
