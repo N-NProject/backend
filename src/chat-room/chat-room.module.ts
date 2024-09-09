@@ -10,6 +10,7 @@ import { MessageModule } from '../message/message.module';
 import { Board } from '../board/entities/board.entity';
 import { UserModule } from '../user/user.module';
 import { BoardsModule } from '../board/board.module';
+import { SseModule } from '../sse/sse.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { BoardsModule } from '../board/board.module';
     forwardRef(() => BoardsModule),
     forwardRef(() => EventsModule),
     forwardRef(() => UserModule),
+    forwardRef(() => SseModule),
   ],
   controllers: [ChatRoomController],
   providers: [ChatRoomService],

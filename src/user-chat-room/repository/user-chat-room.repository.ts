@@ -16,12 +16,13 @@ export class CustomUserChatRoomRepository {
     const chatRooms = await this.userChatRoomRepository
       .createQueryBuilder('ucr')
       .select('ucr.chat_room_id')
+      .leftJoinAndSelect('ucr.chatRoom', 'chatRoom')
+      .leftJoinAndSelect('chatRoom.board', 'board')
       .where('ucr.id IN (:...userChatRoomIds)', { userChatRoomIds })
       .getRawMany();
 
     return chatRooms.map((chatRoom) => chatRoom.chat_room_id);
   }
-
   async paginate(userId: number, pagingParams?: PagingParams) {
     const queryBuilder = this.userChatRoomRepository
       .createQueryBuilder('userchatroom')

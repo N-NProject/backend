@@ -18,6 +18,7 @@ import { SseResponseDto } from '../sse/dto/sse-response.dto';
 import { Observable, Subject } from 'rxjs';
 import { BoardService } from '../board/board.service';
 import { UserChatRoom } from 'src/user-chat-room/entities/user-chat-room.entity';
+import { SseService } from '../sse/sse.service';
 
 @Injectable()
 export class ChatRoomService {
@@ -42,6 +43,7 @@ export class ChatRoomService {
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
     private readonly jwtService: JwtService,
+    private readonly sseService: SseService,
   ) {}
 
   /** 게시글에 해당하는 채팅방 생성 */
@@ -145,16 +147,19 @@ export class ChatRoomService {
     chatRoom.member_count = this.currentCapacity[chatRoomId];
     await this.chatRoomRepository.save(chatRoom);
 
-    this.notifyMemberCountChange(chatRoomId, user.username);
+    // SSE 알림 전송 - SSEService 사용
+    this.sseService.notifyMemberCountChange(
+      chatRoomId,
+      chatRoom.member_count,
+      user.username,
+    );
 
     this.logger.log(
       `User ${userId} joined chat room ID: ${chatRoomId}. Current count: ${this.currentCapacity[chatRoomId]}`,
     );
 
-    // BoardService에 알림
     await this.boardService.handleBoardUpdate(boardId);
 
-    //
     return chatRoomId;
   }
 
@@ -169,6 +174,11 @@ export class ChatRoomService {
     if (!chatRoom) {
       throw new NotFoundException('ChatRoom을 찾을 수 없습니다');
     }
+
+    await this.userChatRoomRepository.delete({
+      user: { id: userId },
+      chatRoom: { id: chatRoom.id },
+    });
 
     if (!this.participants[chatRoom.id]) {
       this.participants[chatRoom.id] = new Set<number>();
@@ -200,12 +210,12 @@ export class ChatRoomService {
     chatRoom.member_count = this.currentCapacity[chatRoom.id];
     await this.chatRoomRepository.save(chatRoom);
 
-    this.userChatRoomRepository.delete({
-      chatRoom: chatRoom,
-      user: { id: userId },
-    });
-
-    this.notifyMemberCountChange(chatRoom.id, user.username);
+    // SSE 알림 전송 - SSEService 사용
+    this.sseService.notifyMemberCountChange(
+      chatRoom.id,
+      chatRoom.member_count,
+      user.username,
+    );
 
     this.logger.log(
       `User ${userId} left chat room ID: ${chatRoom.id}. Current count: ${this.currentCapacity[chatRoom.id]}`,
@@ -272,7 +282,8 @@ export class ChatRoomService {
       throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
 
-    return this.getOrCreateRoomUpdate(chatRoom.id).asObservable();
+    // SSEService의 getRoomUpdatesObservable 사용
+    return this.sseService.getRoomUpdatesObservable(chatRoom.id);
   }
 
   // 특정 boardId에 대한 currentPerson 값을 반환하는 메서드
@@ -297,32 +308,5 @@ export class ChatRoomService {
       where: { id: chatRoomId },
     });
     return chatRoom ? chatRoom.member_count : 0;
-  }
-
-  private notifyMemberCountChange(chatRoomId: number, nickName?: string): void {
-    const roomUpdateSubject = this.getOrCreateRoomUpdate(chatRoomId);
-
-    const sseResponse = new SseResponseDto();
-    sseResponse.currentPerson = this.currentCapacity[chatRoomId] || 1;
-    sseResponse.chatRoomId = chatRoomId;
-
-    if (nickName) {
-      sseResponse.nickName = nickName;
-    } else {
-      sseResponse.nickName = '';
-    }
-
-    roomUpdateSubject.next(sseResponse);
-
-    this.logger.log(
-      `SSE event sent for chat room ${chatRoomId} with current person count ${sseResponse.currentPerson}, nickName: ${sseResponse.nickName}, and chatRoomId: ${sseResponse.chatRoomId}`,
-    );
-  }
-
-  private getOrCreateRoomUpdate(chatRoomId: number): Subject<SseResponseDto> {
-    if (!this.roomUpdates[chatRoomId]) {
-      this.roomUpdates[chatRoomId] = new Subject<SseResponseDto>();
-    }
-    return this.roomUpdates[chatRoomId];
   }
 }
