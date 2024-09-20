@@ -104,7 +104,6 @@ export class ChatRoomController {
     }
     const messagesWithNickname = chatRoom.messages.map((message) => ({
       ...message,
-      nickname: user.username,
     }));
     return {
       ...chatRoom,

@@ -232,14 +232,20 @@ export class ChatRoomService {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
 
-    const message = this.messageRepository.create({ content, chatRoom, user });
+    const message = this.messageRepository.create({
+      content: content,
+      nickName: username, // nickname 대신 nickName 사용
+      chatRoom: chatRoom,
+      user: user,
+    });
+
     await this.messageRepository.save(message);
 
     // 실시간 메시지 전송
     this.eventsGateway.broadcastMessage('broadcastMessage', {
       chatRoomId: chatRoomId,
       message: message.content,
-      nickname: username,
+      nickName: username,
     });
 
     this.logger.log(
