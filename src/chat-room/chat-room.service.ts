@@ -244,7 +244,7 @@ export class ChatRoomService {
 
     const message = this.messageRepository.create({
       content: content,
-      nickName: username, // nickname 대신 nickName 사용
+      nickName: username,
       chatRoom: chatRoom,
       user: user,
     });
@@ -263,15 +263,6 @@ export class ChatRoomService {
     );
 
     return message;
-  }
-
-  async verifyToken(token: string): Promise<any> {
-    try {
-      const payload = await this.jwtService.verifyAsync(token);
-      return payload;
-    } catch (err) {
-      throw new UnauthorizedException('토큰을 찾을 수 없습니다');
-    }
   }
 
   async getUser(userId: number): Promise<User> {
