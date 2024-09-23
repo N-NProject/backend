@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { SseController } from './sse.controller';
 import { BoardService } from '../board/board.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -11,18 +11,20 @@ import { ChatRoomModule } from '../chat-room/chat-room.module';
 import { BoardsModule } from '../board/board.module';
 import { EventsModule } from '../events/evnets.module';
 import { MessageModule } from '../message/message.module';
+import { SseService } from './sse.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Board]),
-    UserModule,
-    LocationModule,
-    ChatRoomModule,
-    BoardsModule,
-    EventsModule,
+    forwardRef(() => ChatRoomModule),
+    forwardRef(() => UserModule),
+    forwardRef(() => BoardsModule),
+    forwardRef(() => EventsModule),
     MessageModule,
+    LocationModule,
   ],
   controllers: [SseController],
-  providers: [BoardService, LocationService, ChatRoomService],
+  exports: [SseService],
+  providers: [BoardService, LocationService, ChatRoomService, SseService],
 })
 export class SseModule {}

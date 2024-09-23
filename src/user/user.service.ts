@@ -107,7 +107,11 @@ export class UserService {
     userId: number,
     pagingParams?: PagingParams,
   ): Promise<any> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['userChatRooms.chatRoom', 'userChatRooms.chatRoom.board'],
+    });
+
     if (!user) {
       throw new NotFoundException(`${userId}번 유저를 찾을 수 없습니다.`);
     }
@@ -119,45 +123,50 @@ export class UserService {
 
     const chatRoomsWithBoards = await Promise.all(
       paginationResult.data.map(async (userChatRoom) => {
-        const chatRoom: ChatRoom = userChatRoom.chatRoom;
-        console.log(chatRoom);
-        const board: Board = chatRoom?.board;
-        console.log(board);
-        const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSED';
-        const currentPerson: number = chatRoom
-          ? await this.chatRoomService.getMemberCount(chatRoom.id)
-          : 0;
+        const chatRoom: ChatRoom | null = userChatRoom.chatRoom;
+        const board: Board | null = chatRoom?.board;
+
+        // chatRoom 또는 board가 null일 경우 필터링
+        if (!chatRoom || !board) {
+          console.log(
+            `ChatRoom or Board is undefined or null for userChatRoomId: ${userChatRoom.id}`,
+          );
+          return null; // null인 데이터를 건너뛰기
+        }
+
+        const currentPerson: number = await this.chatRoomService.getMemberCount(
+          chatRoom.id,
+        );
 
         return {
           id: chatRoom.id,
-          board: board
-            ? {
-                boardId: board.id,
-                title: board.title,
-                currentPerson,
-                max_capacity: board.max_capacity,
-                description: board.description,
-                start_time: board.start_time,
-                category: board.category,
-                location: {
-                  id: board.location.id,
-                  latitude: board.location.latitude,
-                  longitude: board.location.longitude,
-                  locationName: board.location.location_name,
-                },
-                date: board.date,
-                status,
-                createdAt: board.createdAt,
-                updatedAt: board.updatedAt,
-                deletedAt: board.deletedAt,
-              }
-            : undefined,
+          board: {
+            boardId: board.id,
+            title: board.title,
+            currentPerson,
+            max_capacity: board.max_capacity,
+            description: board.description,
+            start_time: board.start_time,
+            category: board.category,
+            location: {
+              id: board.location?.id || 0,
+              latitude: board.location?.latitude || 0,
+              longitude: board.location?.longitude || 0,
+              locationName: board.location?.location_name || 'Unknown location',
+            },
+            date: board.date,
+            status: new Date(board.date) > new Date() ? 'OPEN' : 'CLOSED',
+            createdAt: board.createdAt,
+            updatedAt: board.updatedAt,
+            deletedAt: board.deletedAt,
+          },
         };
       }),
     );
 
+    // null이 아닌 결과만 필터링
     const filteredChatRooms = chatRoomsWithBoards.filter(
-      (item) => item.board !== undefined,
+      (room) => room !== null,
     );
 
     return {
