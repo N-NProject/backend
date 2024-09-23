@@ -16,7 +16,7 @@ export class Message extends TimeStamp {
 
   @Column({ nullable: true })
   @ApiProperty({ description: '사용자 이름' })
-  nickName: string;
+  nickname: string;
 
   @ManyToOne(() => ChatRoom, (chatRoom) => chatRoom.messages, {
     nullable: false,

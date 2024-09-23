@@ -23,9 +23,8 @@ import { SseService } from '../sse/sse.service';
 @Injectable()
 export class ChatRoomService {
   private readonly logger = new Logger(ChatRoomService.name);
-  private roomUpdates: { [key: number]: Subject<SseResponseDto> } = {};
-  private currentCapacity: { [key: number]: number } = {};
-  private participants: { [key: number]: Set<number> } = {};
+  //private currentCapacity: { [key: number]: number } = {}; //각 채팅방의 현재 인원
+  private participants: { [key: number]: Set<number> } = {}; //각 채팅방에 참여 중인 사용자 id 저장
 
   constructor(
     @InjectRepository(ChatRoom)
@@ -59,7 +58,10 @@ export class ChatRoomService {
       max_member_count: board.max_capacity,
     });
     const savedChatRoom = await queryRunner.manager.save(chatRoom);
-    this.currentCapacity[savedChatRoom.id] = 1;
+
+    // participants 초기화
+    this.participants[savedChatRoom.id] = new Set<number>();
+    this.participants[savedChatRoom.id].add(user.id); // 게시글 작성자를 추가
 
     // 게시글 작성자를 채팅방에 추가
     const userChatRoom: UserChatRoom = queryRunner.manager.create(
@@ -89,6 +91,7 @@ export class ChatRoomService {
     return chatRoom;
   }
 
+  // 채팅방에 참가
   async joinChatRoomByBoardId(
     boardId: number,
     userId: number,
@@ -103,66 +106,44 @@ export class ChatRoomService {
       throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
 
-    const chatRoomId = chatRoom.id;
-
-    //
-    if (
-      this.currentCapacity[chatRoomId] === undefined ||
-      isNaN(this.currentCapacity[chatRoomId])
-    ) {
-      this.currentCapacity[chatRoomId] = chatRoom.member_count;
-      this.logger.log(
-        `Initial currentCapacity for chatRoom ${chatRoomId} set to ${this.currentCapacity[chatRoomId]}`,
-      );
+    if (!this.participants[chatRoom.id]) {
+      this.participants[chatRoom.id] = new Set<number>();
     }
 
-    // 동일한 유저가 이미 같은 chatRoomId에 들어가 있는지 확인
-    const userChatRoom = chatRoom.userChatRooms.find(
-      (userChatRoom) => userChatRoom.user.id == userId,
-    );
-
-    if (userChatRoom) {
+    // 이미 참가한 유저 확인
+    if (this.participants[chatRoom.id].has(userId)) {
       throw new Error('user가 이미 방에 들어가있습니다.');
     }
+
+    // 사용자 추가
+    this.participants[chatRoom.id].add(userId);
 
     const newUserChatRoom = this.userChatRoomRepository.create({
       chatRoom: chatRoom,
       user: { id: userId },
     });
 
-    this.userChatRoomRepository.save(newUserChatRoom);
+    await this.userChatRoomRepository.save(newUserChatRoom);
 
-    // 인원 증가
-    this.currentCapacity[chatRoomId] += 1;
-    this.logger.log(
-      `currentCapacity for chatRoom ${chatRoomId} increased to ${this.currentCapacity[chatRoomId]}`,
-    );
-
-    this.participants[chatRoomId] =
-      this.participants[chatRoomId] || new Set<number>();
-    this.participants[chatRoomId].add(userId);
-
-    const user = await this.getUser(userId);
-
-    chatRoom.member_count = this.currentCapacity[chatRoomId];
+    // 현재 인원 수는 participants[chatRoom.id].size로 추적
+    chatRoom.member_count = this.participants[chatRoom.id].size;
     await this.chatRoomRepository.save(chatRoom);
 
-    // SSE 알림 전송 - SSEService 사용
+    const user = await this.getUser(userId);
     this.sseService.notifyMemberCountChange(
-      chatRoomId,
+      chatRoom.id,
       chatRoom.member_count,
       user.username,
     );
 
     this.logger.log(
-      `User ${userId} joined chat room ID: ${chatRoomId}. Current count: ${this.currentCapacity[chatRoomId]}`,
+      `User ${userId} joined chat room ID: ${chatRoom.id}. Current count: ${this.participants[chatRoom.id].size}`,
     );
 
-    await this.boardService.handleBoardUpdate(boardId);
-
-    return chatRoomId;
+    return chatRoom.id;
   }
 
+  // 채팅방에서 나가기
   async leaveChatRoomByBoardId(
     boardId: number,
     userId: number,
@@ -184,33 +165,14 @@ export class ChatRoomService {
       this.participants[chatRoom.id] = new Set<number>();
     }
 
-    if (
-      this.currentCapacity[chatRoom.id] === undefined ||
-      isNaN(this.currentCapacity[chatRoom.id])
-    ) {
-      this.currentCapacity[chatRoom.id] = chatRoom.member_count;
-      this.logger.log(
-        `Initial currentCapacity for chatRoom ${chatRoom.id} set to ${this.currentCapacity[chatRoom.id]}`,
-      );
-    }
-
-    //인원감소
-    this.currentCapacity[chatRoom.id] = Math.max(
-      this.currentCapacity[chatRoom.id] - 1,
-      0,
-    );
-    this.logger.log(
-      `currentCapacity for chatRoom ${chatRoom.id} decreased to ${this.currentCapacity[chatRoom.id]}`,
-    );
-
+    // 사용자 제거
     this.participants[chatRoom.id].delete(userId);
 
-    const user = await this.getUser(userId);
-
-    chatRoom.member_count = this.currentCapacity[chatRoom.id];
+    // 현재 인원 수는 participants[chatRoom.id].size로 추적
+    chatRoom.member_count = this.participants[chatRoom.id].size;
     await this.chatRoomRepository.save(chatRoom);
 
-    // SSE 알림 전송 - SSEService 사용
+    const user = await this.getUser(userId);
     this.sseService.notifyMemberCountChange(
       chatRoom.id,
       chatRoom.member_count,
@@ -218,7 +180,7 @@ export class ChatRoomService {
     );
 
     this.logger.log(
-      `User ${userId} left chat room ID: ${chatRoom.id}. Current count: ${this.currentCapacity[chatRoom.id]}`,
+      `User ${userId} left chat room ID: ${chatRoom.id}. Current count: ${this.participants[chatRoom.id].size}`,
     );
 
     return chatRoom.id;
@@ -244,7 +206,7 @@ export class ChatRoomService {
 
     const message = this.messageRepository.create({
       content: content,
-      nickName: username,
+      nickname: username,
       chatRoom: chatRoom,
       user: user,
     });
@@ -287,7 +249,7 @@ export class ChatRoomService {
   public async getCurrentCapacityForBoard(boardId: number): Promise<number> {
     const chatRoom = await this.findChatRoomByBoardId(boardId);
     if (chatRoom) {
-      return this.currentCapacity[chatRoom.id] || 0;
+      return this.participants[chatRoom.id]?.size || 0;
     }
     return 0;
   }
