@@ -32,7 +32,10 @@ export class CreateBoardDto {
   @IsString()
   readonly title: string;
 
-  @ApiProperty({ description: '게시물의 카테고리' })
+  @ApiProperty({
+    description: '게시물의 카테고리',
+    example: '카공',
+  })
   @IsNotEmpty()
   @IsEnum(Category)
   readonly category: Category;
@@ -56,12 +59,12 @@ export class CreateBoardDto {
   @IsInt()
   readonly maxCapacity: number;
 
-  @ApiProperty({ description: '만나는 날짜' })
+  @ApiProperty({ description: '만나는 날짜', example: '2024-01-01' })
   @IsNotEmpty()
   @IsString()
   readonly date: string;
 
-  @ApiProperty({ description: '시작 시간' })
+  @ApiProperty({ description: '시작 시간', example: '24:00:00' })
   @IsNotEmpty()
   @IsString()
   readonly startTime: string;

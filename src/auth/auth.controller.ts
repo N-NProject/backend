@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import axios from 'axios';
 import { Request, Response } from 'express';
-import { UserService } from 'src/user/user.service';
+import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import { ApiTags } from '@nestjs/swagger';

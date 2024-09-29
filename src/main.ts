@@ -8,7 +8,17 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule); // Express 기반의 애플리케이션 생성
+  // Express 기반의 애플리케이션 생성
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Swagger 설정
+  const config = new DocumentBuilder()
+    .setTitle('YOGIJOGI API')
+    .setDescription('YOGIJOGI API description')
+    .setVersion('1.0')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('swagger', app, document);
 
   // CORS 설정 추가
   app.enableCors({
@@ -17,16 +27,6 @@ async function bootstrap() {
     credentials: true,
     allowedHeaders: 'Content-Type, Authorization',
   });
-
-  // Swagger 설정
-  const config = new DocumentBuilder()
-    .setTitle('YOGIJOGI API')
-    .setDescription('YOGIJOGI API description')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('swagger', app, document);
 
   // Socket.IO 어댑터 설정
   app.useWebSocketAdapter(new IoAdapter(app));

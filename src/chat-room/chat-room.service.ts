@@ -17,7 +17,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SseResponseDto } from '../sse/dto/sse-response.dto';
 import { Observable } from 'rxjs';
 import { BoardService } from '../board/board.service';
-import { UserChatRoom } from 'src/user-chat-room/entities/user-chat-room.entity';
+import { UserChatRoom } from '../user-chat-room/entities/user-chat-room.entity';
 import { SseService } from '../sse/sse.service';
 
 @Injectable()
