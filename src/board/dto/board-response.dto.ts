@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsString,
-  IsNumber,
   IsDate,
-  IsOptional,
   IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
 } from 'class-validator';
 
 class UserDto {
@@ -108,7 +108,7 @@ export class BoardResponseDto {
   @ApiProperty()
   @IsNumber()
   @IsNotEmpty()
-  currentCapacity: number;
+  currentPerson: number;
 
   @ApiProperty()
   @IsNotEmpty()

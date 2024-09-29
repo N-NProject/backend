@@ -13,7 +13,12 @@ import { UserDto } from './dto/user.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Token } from 'src/auth/auth.decorator';
 import { UserResponseDto } from './dto/user.response.dto';
-import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { PagingParams } from '../global/common/type';
 import { UserChatRoomResponseDto } from './dto/user-chat-room.response.dto';
 
@@ -22,30 +27,31 @@ import { UserChatRoomResponseDto } from './dto/user-chat-room.response.dto';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @ApiOperation({ summary: '유저가 생성한 게시글, 유저가 참여한 게시글 조회' })
   @ApiBearerAuth()
   @ApiQuery({
     name: 'createdBeforeCursor',
     required: false,
     type: String,
-    description: '생성한 게시물 목록의 이전 커서 값',
+    description: '생성한 게시글 목록의 이전 커서 값',
   })
   @ApiQuery({
     name: 'createdAfterCursor',
     required: false,
     type: String,
-    description: '생성한 게시물 목록의 다음 커서 값',
+    description: '생성한 게시글 목록의 다음 커서 값',
   })
   @ApiQuery({
     name: 'joinedBeforeCursor',
     required: false,
     type: String,
-    description: '참여한 게시물 목록의 이전 커서 값',
+    description: '참여한 게시글 목록의 이전 커서 값',
   })
   @ApiQuery({
     name: 'joinedAfterCursor',
     required: false,
     type: String,
-    description: '참여한 게시물 목록의 다음 커서 값',
+    description: '참여한 게시글 목록의 다음 커서 값',
   })
   @Get()
   @UseGuards(AuthGuard)
@@ -85,6 +91,7 @@ export class UserController {
   }
 
   /** 유저가 참여한 채팅방 반환 */
+  @ApiOperation({ summary: '유저가 참여한 채팅방' })
   @ApiQuery({
     name: 'beforeCursor',
     required: false,

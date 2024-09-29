@@ -7,6 +7,7 @@ import { UserModule } from '../user/user.module';
 import { LocationModule } from '../location/location.module';
 import { ChatRoomModule } from '../chat-room/chat-room.module';
 import { Message } from '../message/entities/message.entity';
+import { BoardMapper } from './dto/board.mapper';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { Message } from '../message/entities/message.entity';
     forwardRef(() => ChatRoomModule),
   ],
   controllers: [BoardController],
-  providers: [BoardService],
+  providers: [BoardService, BoardMapper],
   exports: [BoardService],
 })
 export class BoardsModule {}

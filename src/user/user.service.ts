@@ -134,19 +134,15 @@ export class UserService {
           return null; // null인 데이터를 건너뛰기
         }
 
-        const currentPerson: number = await this.chatRoomService.getMemberCount(
-          chatRoom.id,
-        );
-
         return {
           id: chatRoom.id,
           board: {
             boardId: board.id,
             title: board.title,
-            currentPerson,
-            max_capacity: board.max_capacity,
+            currentPerson: chatRoom.member_count,
+            maxCapacity: board.max_capacity,
             description: board.description,
-            start_time: board.start_time,
+            startTime: board.start_time,
             category: board.category,
             location: {
               id: board.location?.id || 0,
