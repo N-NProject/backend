@@ -11,7 +11,6 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeOrmConfigService } from './config/typeorm.config';
 import { BoardsModule } from './board/board.module';
-import { getEnvPath } from './global/common/helper/env.helper';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { LocationModule } from './location/location.module';
@@ -21,8 +20,6 @@ import { SseModule } from './sse/sse.module';
 import { EventsModule } from './events/evnets.module';
 import { MessageService } from './message/message.service';
 import { MessageModule } from './message/message.module';
-
-const envFilePath: string = getEnvPath('./');
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
@@ -44,20 +41,19 @@ export class LoggerMiddleware implements NestMiddleware {
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath,
       isGlobal: true,
     }),
     TypeOrmModule.forRootAsync({
       useClass: TypeOrmConfigService,
     }),
-    BoardsModule,
-    UserModule,
     AuthModule,
-    LocationModule,
+    BoardsModule,
     ChatRoomModule,
-    SseModule,
     EventsModule,
+    LocationModule,
     MessageModule,
+    SseModule,
+    UserModule,
   ],
   controllers: [SseController],
   providers: [MessageService],
