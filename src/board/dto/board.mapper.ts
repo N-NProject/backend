@@ -29,8 +29,7 @@ export class BoardMapper {
     } = board;
     const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSE';
 
-    // 기본 response 객체 생성 (editable 없이)
-    const response: BoardResponseDto = {
+    return {
       id,
       title,
       maxCapacity: max_capacity,
@@ -50,14 +49,8 @@ export class BoardMapper {
       deletedAt,
       status,
       user: user ? { userId: user.id, username: user.username } : undefined,
+      editable: userId === user.id,
     };
-
-    // userId가 있는 경우에만 editable을 추가
-    if (userId) {
-      response.editable = user.id === userId;
-    }
-
-    return response;
   }
 
   async updateBoardFromDto(
