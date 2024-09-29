@@ -27,7 +27,6 @@ export class BoardMapper {
       user,
       location,
     } = board;
-
     const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSE';
 
     // 기본 response 객체 생성 (editable 없이)
@@ -54,7 +53,7 @@ export class BoardMapper {
     };
 
     // userId가 있는 경우에만 editable을 추가
-    if (userId !== undefined) {
+    if (userId) {
       response.editable = user.id === userId;
     }
 

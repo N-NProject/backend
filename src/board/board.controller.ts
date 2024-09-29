@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import {
   Body,
   Controller,
@@ -7,21 +8,24 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  UnauthorizedException,
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
-import { BoardService } from './board.service';
-import { CreateBoardDto } from './dto/create-board';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { UpdateBoardDto } from './dto/update-board';
-import { BoardResponseDto } from './dto/board-response.dto';
+import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
+import { BoardService } from './board.service';
+import { CreateBoardDto } from './dto/create-board';
+import { UpdateBoardDto } from './dto/update-board';
+import { BoardResponseDto } from './dto/board-response.dto';
 import { PaginationParamsDto } from './dto/pagination-params.dto';
 import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
 import { BoardIdDto } from './dto/boardId.dto';
@@ -66,8 +70,25 @@ export class BoardController {
   @Get(':boardId')
   async findOne(
     @Param() boardIdDto: BoardIdDto,
-    @Token('sub') userId: number,
+    @Req() req: Request,
   ): Promise<BoardResponseDto> {
+    // 쿠키에서 JWT 토큰을 추출
+    const token = req.cookies['accessToken'];
+
+    if (!token) {
+      throw new UnauthorizedException('JWT 토큰이 쿠키에 없습니다.');
+    }
+
+    // JwtService를 이용해 토큰 디코딩
+    const jwtService = new JwtService({ secret: 'JWT_SECRET' });
+    const decodedToken = jwtService.decode(token) as any;
+
+    // sub 클레임에서 userId 추출
+    const userId = decodedToken?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('유효한 사용자 ID가 아닙니다.');
+    }
+
     return this.boardService.findOne(boardIdDto.boardId, userId);
   }
 
