@@ -10,6 +10,8 @@ import { CustomBoardRepository } from '../board/repository/board.repository';
 import { Board } from '../board/entities/board.entity';
 import { ChatRoom } from '../chat-room/entities/chat-room.entity';
 import { ChatRoomService } from '../chat-room/chat-room.service';
+import { BoardMapper } from '../board/dto/board.mapper';
+import { BoardResponseDto } from '../board/dto/board-response.dto';
 
 @Injectable()
 export class UserService {
@@ -19,6 +21,7 @@ export class UserService {
     private readonly customUserChatRoomRepository: CustomUserChatRoomRepository,
     private readonly customBoardRepository: CustomBoardRepository,
     private readonly chatRoomService: ChatRoomService,
+    private readonly boardMapper: BoardMapper,
   ) {}
 
   async getUserByKakaoId(kakaoId: number): Promise<User> {
@@ -45,39 +48,59 @@ export class UserService {
     });
 
     if (!user) {
-      throw new NotFoundException(`Can't find User with id ${id}`);
+      throw new NotFoundException(`${id}번 유저를 찾지 못했습니다.`);
     }
 
-    const createdBoardsPagination =
+    const createdBoards =
       await this.customBoardRepository.paginateCreatedBoards(
         id,
         createdBoardsPagingParams,
       );
 
-    const userChatRoomIds = user.userChatRooms.map(
+    const mappedCreatedBoards: BoardResponseDto[] = await Promise.all(
+      createdBoards.data.map(async (board) => {
+        const chatRoom: ChatRoom =
+          await this.chatRoomService.findChatRoomByBoardId(board.id);
+        return this.boardMapper.mapBoardToBoardResponseDto(board, chatRoom);
+      }),
+    );
+
+    const userChatRoomIds: number[] = user.userChatRooms.map(
       (userChatRoom) => userChatRoom.id,
     );
 
-    const chatroomIds =
+    const chatroomIds: number[] =
       await this.customUserChatRoomRepository.getChatRoomIds(userChatRoomIds);
 
-    const joinedBoardsPagination =
-      await this.customBoardRepository.paginateJoinedBoards(
-        id,
-        chatroomIds,
-        joinedBoardsPagingParams,
-      );
+    const joinedBoards = await this.customBoardRepository.paginateJoinedBoards(
+      id,
+      chatroomIds,
+      joinedBoardsPagingParams,
+    );
+
+    const mappedJoinedBoards: BoardResponseDto[] = await Promise.all(
+      joinedBoards.data.map(async (board) => {
+        const chatRoom: ChatRoom =
+          await this.chatRoomService.findChatRoomByBoardId(board.id);
+        return this.boardMapper.mapBoardToBoardResponseDto(board, chatRoom);
+      }),
+    );
+
+    const filteredCreatedBoards: BoardResponseDto[] =
+      this.filterNullBoards(mappedCreatedBoards);
+    const filteredJoinedBoards: BoardResponseDto[] =
+      this.filterNullBoards(mappedJoinedBoards);
 
     return {
       username: user.username,
       region: user.region,
       createdBoards: {
-        data: createdBoardsPagination.data,
-        cursor: createdBoardsPagination.cursor,
+        data: filteredCreatedBoards,
+        cursor: createdBoards.cursor,
       },
       joinedBoards: {
-        data: joinedBoardsPagination.data,
-        cursor: joinedBoardsPagination.cursor,
+        data: filteredJoinedBoards,
+        cursor: joinedBoards.cursor,
       },
     };
   }
@@ -169,5 +192,11 @@ export class UserService {
       chatRooms: filteredChatRooms,
       cursor: paginationResult.cursor,
     };
+  }
+
+  private filterNullBoards(
+    boards: (BoardResponseDto | null)[],
+  ): BoardResponseDto[] {
+    return boards.filter((board): board is BoardResponseDto => board !== null);
   }
 }
