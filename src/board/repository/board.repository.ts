@@ -15,6 +15,7 @@ export class CustomBoardRepository {
   async paginateCreatedBoards(userId: number, pagingParams?: PagingParams) {
     const queryBuilder = this.boardRepository
       .createQueryBuilder('board')
+      .leftJoinAndSelect('board.location', 'location')
       .where('board.user_id = :userId', { userId })
       .orderBy('board.updatedAt', 'DESC');
 
@@ -48,6 +49,7 @@ export class CustomBoardRepository {
   ) {
     const queryBuilder = this.boardRepository
       .createQueryBuilder('board')
+      .leftJoinAndSelect('board.location', 'location')
       .where('board.chat_room IN (:...chatroomIds)', { chatroomIds })
       .andWhere('board.user_id != :userId', { userId })
       .orderBy('board.updatedAt', 'DESC');
