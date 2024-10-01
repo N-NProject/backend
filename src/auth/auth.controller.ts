@@ -95,7 +95,12 @@ export class AuthController {
         user.id,
       );
 
-      this.setTokens(res, accessToken, refreshToken);
+      this.setTokens(
+        res,
+        accessToken,
+        refreshToken,
+        'http://localhost:3000/boards',
+      );
     } catch {
       throw new BadRequestException();
     }
@@ -133,7 +138,12 @@ export class AuthController {
         `);
   }
 
-  private setTokens(res: Response, accessToken: string, refreshToken: string) {
+  private setTokens(
+    res: Response,
+    accessToken: string,
+    refreshToken: string,
+    redirectUrl?: string,
+  ) {
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       // secure: true, // HTTPS 사용 시 활성화
@@ -152,6 +162,10 @@ export class AuthController {
       `Tokens issued - Access Token: ${accessToken}, Refresh Token: ${refreshToken}`,
     );
 
-    res.sendStatus(204);
+    if (redirectUrl) {
+      res.redirect(302, redirectUrl);
+    } else {
+      res.sendStatus(204);
+    }
   }
 }
