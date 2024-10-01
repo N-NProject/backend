@@ -23,6 +23,7 @@ export class CustomUserChatRoomRepository {
 
     return chatRooms.map((chatRoom) => chatRoom.chat_room_id);
   }
+
   async paginate(userId: number, pagingParams?: PagingParams) {
     const queryBuilder = this.userChatRoomRepository
       .createQueryBuilder('userchatroom')

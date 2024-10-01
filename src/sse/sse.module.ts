@@ -12,6 +12,7 @@ import { BoardsModule } from '../board/board.module';
 import { EventsModule } from '../events/evnets.module';
 import { MessageModule } from '../message/message.module';
 import { SseService } from './sse.service';
+import { BoardMapper } from '../board/dto/board.mapper';
 
 @Module({
   imports: [
@@ -25,6 +26,12 @@ import { SseService } from './sse.service';
   ],
   controllers: [SseController],
   exports: [SseService],
-  providers: [BoardService, LocationService, ChatRoomService, SseService],
+  providers: [
+    BoardService,
+    LocationService,
+    ChatRoomService,
+    SseService,
+    BoardMapper,
+  ],
 })
 export class SseModule {}

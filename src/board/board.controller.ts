@@ -13,22 +13,22 @@ import {
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
-import { BoardService } from './board.service';
-import { CreateBoardDto } from './dto/create-board';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { UpdateBoardDto } from './dto/update-board';
-import { BoardResponseDto } from './dto/board-response.dto';
+import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
+import { BoardService } from './board.service';
+import { CreateBoardDto } from './dto/create-board';
+import { UpdateBoardDto } from './dto/update-board';
+import { BoardResponseDto } from './dto/board-response.dto';
 import { PaginationParamsDto } from './dto/pagination-params.dto';
 import { PaginationBoardsResponseDto } from './dto/pagination-boards-response.dto';
 import { BoardIdDto } from './dto/boardId.dto';
-import { JwtService } from '@nestjs/jwt';
 
 @ApiTags('Boards')
 @Controller('api/v1/boards')
@@ -72,8 +72,6 @@ export class BoardController {
     @Param() boardIdDto: BoardIdDto,
     @Req() req: Request,
   ): Promise<BoardResponseDto> {
-    const { boardId } = boardIdDto;
-
     // 쿠키에서 JWT 토큰을 추출
     const token = req.cookies['accessToken'];
 
@@ -91,11 +89,9 @@ export class BoardController {
       throw new UnauthorizedException('유효한 사용자 ID가 아닙니다.');
     }
 
-    console.log(`${boardId}가 있습니다`, boardIdDto);
-    console.log(`userId: ${userId}`); // userId 로그 출력
-
-    return this.boardService.findOne(boardId, userId);
+    return this.boardService.findOne(boardIdDto.boardId, userId);
   }
+
   @ApiOperation({ summary: '게시물 업데이트' })
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
@@ -105,8 +101,11 @@ export class BoardController {
     @Body(ValidationPipe) updateBoardDto: UpdateBoardDto,
     @Token('sub') userId: number,
   ): Promise<BoardResponseDto> {
-    const { boardId } = boardIdDto;
-    return this.boardService.updateBoard(boardId, userId, updateBoardDto);
+    return this.boardService.updateBoard(
+      boardIdDto.boardId,
+      userId,
+      updateBoardDto,
+    );
   }
 
   @Delete(':boardId')

@@ -15,7 +15,7 @@ import { Board } from '../board/entities/board.entity';
 import { EventsGateway } from '../events/events.gateway';
 import { JwtService } from '@nestjs/jwt';
 import { SseResponseDto } from '../sse/dto/sse-response.dto';
-import { Observable, Subject } from 'rxjs';
+import { Observable } from 'rxjs';
 import { BoardService } from '../board/board.service';
 import { UserChatRoom } from 'src/user-chat-room/entities/user-chat-room.entity';
 import { SseService } from '../sse/sse.service';
@@ -245,27 +245,10 @@ export class ChatRoomService {
     return this.sseService.getRoomUpdatesObservable(chatRoom.id);
   }
 
-  // 특정 boardId에 대한 currentPerson 값을 반환하는 메서드
-  public async getCurrentCapacityForBoard(boardId: number): Promise<number> {
-    const chatRoom = await this.findChatRoomByBoardId(boardId);
-    if (chatRoom) {
-      return this.participants[chatRoom.id]?.size || 0;
-    }
-    return 0;
-  }
-
   public async findChatRoomByBoardId(boardId: number): Promise<ChatRoom> {
     return this.chatRoomRepository.findOne({
       where: { board: { id: boardId } },
       relations: ['userChatRooms', 'userChatRooms.user'],
     });
-  }
-
-  /* 채팅방 현재 인원 조회 */
-  async getMemberCount(chatRoomId: number): Promise<number> {
-    const chatRoom = await this.chatRoomRepository.findOne({
-      where: { id: chatRoomId },
-    });
-    return chatRoom ? chatRoom.member_count : 0;
   }
 }
