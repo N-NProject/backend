@@ -33,7 +33,7 @@ export class UpdateBoardDto {
   @IsString()
   title?: string;
 
-  @ApiProperty({ description: '게시물의 카테고리' })
+  @ApiProperty({ description: '게시물의 카테고리', example: '카공' })
   @IsOptional()
   @IsEnum(Category)
   category?: Category;
@@ -58,12 +58,12 @@ export class UpdateBoardDto {
   @IsInt()
   maxCapacity?: number;
 
-  @ApiProperty({ description: '만나는 날짜' })
+  @ApiProperty({ description: '만나는 날짜', example: '2024-01-01' })
   @IsOptional()
   @IsString()
   date?: string;
 
-  @ApiProperty({ description: '시작 시간' })
+  @ApiProperty({ description: '시작 시간', example: '24:00:00' })
   @IsOptional()
   @IsString()
   startTime?: string;
