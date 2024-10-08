@@ -52,5 +52,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       message.content,
       message.nickname,
     );
+
+    this.broadcastMessage('newMessage', message);
   }
 }
