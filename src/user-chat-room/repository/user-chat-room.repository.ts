@@ -2,7 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { buildPaginator } from 'typeorm-cursor-pagination';
-import { UserChatRoom } from 'src/user-chat-room/entities/user-chat-room.entity';
+import { UserChatRoom } from '../entities/user-chat-room.entity';
 import { PagingParams } from '../../global/common/type';
 
 @Injectable()

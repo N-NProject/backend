@@ -14,7 +14,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
+  ApiCookieAuth,
   ApiOperation,
   ApiQuery,
   ApiTags,
@@ -55,7 +55,7 @@ export class BoardController {
     return this.boardService.findAll(paginationParams);
   }
 
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: '새 게시물 생성' })
   @UseGuards(AuthGuard)
   @Post()
@@ -93,7 +93,7 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: '게시물 업데이트' })
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @UseGuards(AuthGuard)
   @Patch(':boardId')
   async update(
@@ -110,7 +110,7 @@ export class BoardController {
 
   @Delete(':boardId')
   @ApiOperation({ summary: '게시물 삭제' })
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @UseGuards(AuthGuard)
   async remove(
     @Param() boardIdDto: BoardIdDto,

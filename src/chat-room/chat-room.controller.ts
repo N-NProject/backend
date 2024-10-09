@@ -14,7 +14,7 @@ import {
 import { ChatRoomService } from './chat-room.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { Token } from '../auth/auth.decorator';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateMessageDto } from '../message/dto/create-message.dto';
 import { UserService } from '../user/user.service';
 import { BoardIdDto } from './dto/board-id.dto';
@@ -33,7 +33,7 @@ export class ChatRoomController {
   /**
    * 게시글의 채팅방 접속
    */
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: '게시글의 채팅방 접속' })
   @Post('join/:boardId')
   @HttpCode(200)
@@ -54,7 +54,7 @@ export class ChatRoomController {
   }
 
   //메세지 전송
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @Post(':chatRoomId/messages')
   @ApiOperation({ summary: '메세지 전송' })
   @ApiBody({ type: CreateMessageDto })
@@ -78,7 +78,7 @@ export class ChatRoomController {
   }
 
   //채팅방 목록 조회
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @Get('rooms')
   @ApiOperation({ summary: '채팅방 목록 조회' })
   @HttpCode(200)
@@ -88,7 +88,7 @@ export class ChatRoomController {
   }
 
   // 특정 채팅방 조회
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @Get(':chatRoomId')
   @ApiOperation({ summary: '특정 채팅방 조회' })
   @HttpCode(200)
@@ -114,7 +114,7 @@ export class ChatRoomController {
   /**
    * 채팅방 나가기
    */
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: '채팅방 나가기' })
   @Delete(':boardId/leave')
   @HttpCode(200)

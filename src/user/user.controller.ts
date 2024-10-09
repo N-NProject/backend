@@ -14,7 +14,7 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { Token } from 'src/auth/auth.decorator';
 import { UserResponseDto } from './dto/user.response.dto';
 import {
-  ApiBearerAuth,
+  ApiCookieAuth,
   ApiOperation,
   ApiQuery,
   ApiTags,
@@ -28,7 +28,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @ApiOperation({ summary: '유저가 생성한 게시글, 유저가 참여한 게시글 조회' })
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiQuery({
     name: 'createdBeforeCursor',
     required: false,
@@ -79,7 +79,7 @@ export class UserController {
     );
   }
 
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @Patch()
   @HttpCode(204)
   @UseGuards(AuthGuard)
@@ -104,7 +104,7 @@ export class UserController {
     type: String,
     description: '다음 커서 값',
   })
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @Get('chatrooms')
   @HttpCode(200)
   @UseGuards(AuthGuard)
