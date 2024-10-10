@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserDto } from './dto/user.dto';
-import { AuthGuard } from 'src/auth/auth.guard';
-import { Token } from 'src/auth/auth.decorator';
+import { AuthGuard } from '../auth/auth.guard';
+import { Token } from '../auth/auth.decorator';
 import { UserResponseDto } from './dto/user.response.dto';
 import {
   ApiCookieAuth,

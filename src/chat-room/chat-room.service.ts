@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ConflictException,
   forwardRef,
   Inject,
   Injectable,
@@ -96,13 +98,19 @@ export class ChatRoomService {
       throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
 
+    if (chatRoom.member_count >= chatRoom.max_member_count) {
+      throw new BadRequestException(
+        '채팅방의 최대 인원수를 초과할 수 없습니다.',
+      );
+    }
+
     // 동일한 유저가 이미 같은 chatRoomId에 들어가 있는지 확인
     const userChatRoom = chatRoom.userChatRooms.find(
       (userChatRoom) => userChatRoom.user.id == userId,
     );
 
     if (userChatRoom) {
-      throw new Error('user가 이미 방에 들어가있습니다.');
+      throw new ConflictException('user가 이미 방에 들어가있습니다.');
     }
 
     chatRoom.member_count += 1;
@@ -210,7 +218,7 @@ export class ChatRoomService {
 
   async getUser(userId: number): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
-    console.log(`Fetched user: ${user.id} with username: ${user.username}`);
+    this.logger.log(`Fetched user: ${user.id} with username: ${user.username}`);
     return user;
   }
 
