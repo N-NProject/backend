@@ -31,6 +31,8 @@ export class BoardService {
     private readonly boardRepository: Repository<Board>,
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,
+    @InjectRepository(ChatRoom)
+    private readonly chatRoomRepository: Repository<ChatRoom>,
     private readonly locationService: LocationService,
     private readonly chatRoomService: ChatRoomService,
     private dataSource: DataSource,
@@ -182,7 +184,7 @@ export class BoardService {
   ): Promise<BoardResponseDto> {
     const board: Board = await this.boardRepository.findOne({
       where: { id },
-      relations: ['user', 'location'],
+      relations: ['user', 'location', 'chat_room'], //chatRoom에 대해서 명시적으로 로드
     });
 
     if (!board) {
@@ -200,6 +202,12 @@ export class BoardService {
       updateBoardDto,
     );
     const savedBoard: Board = await this.boardRepository.save(updatedBoard);
+
+    // maxCapacity 변경 시 ChatRoom의 max_member_count 업데이트
+    if (board.chat_room) {
+      board.chat_room.max_member_count = updateBoardDto.maxCapacity;
+      await this.chatRoomRepository.save(board.chat_room);
+    }
 
     const chatRoom: ChatRoom =
       await this.chatRoomService.findChatRoomByBoardId(id);
