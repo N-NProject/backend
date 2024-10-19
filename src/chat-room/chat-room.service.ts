@@ -216,7 +216,7 @@ export class ChatRoomService {
     // 실시간 메시지 전송
     this.eventsGateway.broadcastMessage('broadcastMessage', {
       chatRoomId: chatRoomId,
-      message: message.content,
+      content: message.content,
       nickName: username,
     });
 
