@@ -183,7 +183,7 @@ describe('ChatRoomService', () => {
 
       await service.leaveChatRoomByBoardId(1, 1);
       expect(chatRoomRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ member_count: 1 }),
+        expect.objectContaining({ memberCount: 1 }),
       );
     });
 
