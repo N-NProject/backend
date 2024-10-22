@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Board } from '../../board/entities/board.entity';
 
@@ -18,7 +18,7 @@ export class Location {
 
   @Column({ type: 'varchar', length: 100, nullable: false })
   @ApiProperty({ description: '위치 이름', nullable: false })
-  location_name: string;
+  locationName: string;
 
   @Column({ type: 'int', nullable: true })
   @ApiProperty({ description: '위치 순서', nullable: true })

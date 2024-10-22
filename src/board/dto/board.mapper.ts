@@ -42,7 +42,7 @@ export class BoardMapper {
         id: location.id,
         latitude: location.latitude,
         longitude: location.longitude,
-        locationName: location.location_name,
+        locationName: location.locationName,
       },
       createdAt,
       updatedAt,
@@ -61,8 +61,8 @@ export class BoardMapper {
       board.location = await this.locationService.updateLocation({
         ...board.location,
         ...updateBoardDto.location,
-        location_name:
-          updateBoardDto.locationName || board.location.location_name,
+        locationName:
+          updateBoardDto.locationName || board.location.locationName,
       });
     }
 
@@ -101,7 +101,7 @@ export class BoardMapper {
         id: board.location?.id || 0,
         latitude: board.location?.latitude || 0,
         longitude: board.location?.longitude || 0,
-        locationName: board.location?.location_name || 'Unknown location',
+        locationName: board.location?.locationName || 'Unknown location',
       },
       date: board.date,
       status: new Date(board.date) > new Date() ? 'OPEN' : 'CLOSED',

@@ -251,7 +251,7 @@ export class BoardService {
         location_name,
       });
     } else {
-      newLocation.location_name = location_name;
+      newLocation.locationName = location_name;
       await this.locationService.updateLocation(newLocation);
     }
 

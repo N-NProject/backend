@@ -171,7 +171,7 @@ export class UserService {
               id: board.location?.id || 0,
               latitude: board.location?.latitude || 0,
               longitude: board.location?.longitude || 0,
-              locationName: board.location?.location_name || 'Unknown location',
+              locationName: board.location?.locationName || 'Unknown location',
             },
             date: board.date,
             status: new Date(board.date) > new Date() ? 'OPEN' : 'CLOSED',
