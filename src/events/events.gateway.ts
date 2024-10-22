@@ -25,25 +25,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection(client: Socket): void {
     this.logger.log('Client connected: ' + client.id);
-    client.leave(client.id);
-    client.data.chatRoomId = 'room:lobby';
-    client.join('room:lobby');
   }
 
   handleDisconnect(client: Socket): void {
-    const { chatRoomId } = client.data;
-    if (
-      chatRoomId !== 'room:lobby' &&
-      !this.server.sockets.adapter.rooms.get(chatRoomId)
-    ) {
-      // client.id 대신 사용자의 실제 ID를 전달합니다.
-      const userId = parseInt(client.data.userId, 10); // client.data.userId가 있다고 가정
-      this.chatRoomService.leaveChatRoomByBoardId(
-        parseInt(chatRoomId.split(':')[1]),
-        userId,
-      );
-      this.server.emit('getChatRoomList', this.chatRoomService.getChatRooms());
-    }
     this.logger.log('Client disconnected: ' + client.id);
   }
   broadcastMessage(event: string, message: any) {
@@ -68,5 +52,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       message.content,
       message.nickname,
     );
+
+    this.broadcastMessage('newMessage', message);
   }
 }
