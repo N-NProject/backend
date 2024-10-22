@@ -10,10 +10,10 @@ import { BoardService } from '../board/board.service';
 import { EventsGateway } from '../events/events.gateway';
 import { SseService } from '../sse/sse.service';
 import {
-  NotFoundException,
-  UnauthorizedException,
   BadRequestException,
   ConflictException,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 describe('ChatRoomService', () => {
@@ -127,8 +127,8 @@ describe('ChatRoomService', () => {
     it('채팅방에 참가할 때 멤버 수가 증가해야 합니다', async () => {
       const chatRoom = {
         id: 1,
-        member_count: 1,
-        max_member_count: 5,
+        memberCount: 1,
+        maxMemberCount: 5,
         userChatRooms: [],
       } as ChatRoom;
       jest.spyOn(service, 'findChatRoomByBoardId').mockResolvedValue(chatRoom);
@@ -143,8 +143,8 @@ describe('ChatRoomService', () => {
     it('채팅방 최대 인원을 초과할 수 없습니다', async () => {
       const chatRoom = {
         id: 1,
-        member_count: 5,
-        max_member_count: 5,
+        memberCount: 5,
+        maxMemberCount: 5,
         userChatRooms: [],
       } as ChatRoom;
       jest.spyOn(service, 'findChatRoomByBoardId').mockResolvedValue(chatRoom);
@@ -157,8 +157,8 @@ describe('ChatRoomService', () => {
     it('이미 채팅방에 들어가 있는 경우 ConflictException을 던져야 합니다', async () => {
       const chatRoom = {
         id: 1,
-        member_count: 1,
-        max_member_count: 5,
+        memberCount: 1,
+        maxMemberCount: 5,
         userChatRooms: [{ user: { id: 1 } }],
       } as ChatRoom;
       jest.spyOn(service, 'findChatRoomByBoardId').mockResolvedValue(chatRoom);
@@ -173,7 +173,7 @@ describe('ChatRoomService', () => {
     it('채팅방에서 나갈 때 멤버 수가 감소해야 합니다', async () => {
       const chatRoom = {
         id: 1,
-        member_count: 2,
+        memberCount: 2,
         userChatRooms: [{ user: { id: 1 } }],
       } as ChatRoom;
       jest.spyOn(chatRoomRepository, 'findOne').mockResolvedValue(chatRoom);

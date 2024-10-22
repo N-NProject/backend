@@ -28,17 +28,13 @@ export class Board extends TimeStamp {
   @ApiProperty({ description: '제목', nullable: true })
   title: string;
 
-  @Column({ type: 'int' })
-  @ApiProperty({ description: '최대 참가 인원' })
-  max_capacity: number;
-
   @Column({ type: 'varchar', nullable: true })
   @ApiProperty({ description: '설명', nullable: true })
   description: string;
 
   @Column({ type: 'time', nullable: true })
   @ApiProperty({ description: '시작시간', nullable: true })
-  start_time: string;
+  startTime: string;
 
   @ManyToOne(() => Location, (location) => location.boards)
   @JoinColumn({ name: 'location_id' })
@@ -55,5 +51,5 @@ export class Board extends TimeStamp {
 
   @OneToOne(() => ChatRoom, (chatRoom) => chatRoom.board)
   @JoinColumn({ name: 'chat_room_id' })
-  chat_room: ChatRoom;
+  chatRoom: ChatRoom;
 }

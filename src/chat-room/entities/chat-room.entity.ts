@@ -20,17 +20,17 @@ export class ChatRoom extends TimeStamp {
 
   @Column({ name: 'chat_name', type: 'varchar', length: 100, nullable: false })
   @ApiProperty({ description: '채팅방 이름' })
-  chat_name: string;
+  chatName: string;
 
   @Column({ name: 'member_count', type: 'int', nullable: false })
   @ApiProperty({ description: '현재 채팅방 인원' })
-  member_count: number;
+  memberCount: number;
 
   @Column({ name: 'max_member_count', type: 'int', nullable: false })
   @ApiProperty({ description: '채팅방 최대 인원' })
-  max_member_count: number;
+  maxMemberCount: number;
 
-  @OneToOne(() => Board, (board) => board.chat_room, { onDelete: 'CASCADE' })
+  @OneToOne(() => Board, (board) => board.chatRoom, { onDelete: 'CASCADE' })
   @JoinColumn()
   board: Board;
 

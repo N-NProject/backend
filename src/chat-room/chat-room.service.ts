@@ -45,13 +45,14 @@ export class ChatRoomService {
   async createChatRoomForBoard(
     queryRunner: QueryRunner,
     board: Board,
+    maxMemberCount: number,
     user: User,
   ): Promise<ChatRoom> {
     const chatRoom: ChatRoom = queryRunner.manager.create(ChatRoom, {
       board: board,
-      chat_name: `보드 ${board.id} 채팅방`,
-      member_count: 1,
-      max_member_count: board.max_capacity,
+      chatName: `보드 ${board.id} 채팅방`,
+      memberCount: 1,
+      maxMemberCount: maxMemberCount,
     });
     const savedChatRoom = await queryRunner.manager.save(chatRoom);
 
@@ -98,7 +99,7 @@ export class ChatRoomService {
       throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
 
-    if (chatRoom.member_count >= chatRoom.max_member_count) {
+    if (chatRoom.memberCount >= chatRoom.maxMemberCount) {
       throw new BadRequestException(
         '채팅방의 최대 인원수를 초과할 수 없습니다.',
       );
@@ -113,7 +114,7 @@ export class ChatRoomService {
       throw new ConflictException('user가 이미 방에 들어가있습니다.');
     }
 
-    chatRoom.member_count += 1;
+    chatRoom.memberCount += 1;
     await this.chatRoomRepository.save(chatRoom);
 
     const newUserChatRoom = this.userChatRoomRepository.create({
@@ -126,12 +127,12 @@ export class ChatRoomService {
     const user = await this.getUser(userId);
     this.sseService.notifyMemberCountChange(
       chatRoom.id,
-      chatRoom.member_count,
+      chatRoom.memberCount,
       user.username,
     );
 
     this.logger.log(
-      `User ${userId} joined chat room ID: ${chatRoom.id}. Current count: ${chatRoom.member_count}`,
+      `User ${userId} joined chat room ID: ${chatRoom.id}. Current count: ${chatRoom.memberCount}`,
     );
 
     return chatRoom.id;
@@ -156,7 +157,7 @@ export class ChatRoomService {
     });
 
     if (result.affected > 0) {
-      chatRoom.member_count -= 1;
+      chatRoom.memberCount -= 1;
     }
 
     await this.chatRoomRepository.save(chatRoom);
@@ -164,12 +165,12 @@ export class ChatRoomService {
     const user = await this.getUser(userId);
     this.sseService.notifyMemberCountChange(
       chatRoom.id,
-      chatRoom.member_count,
+      chatRoom.memberCount,
       user.username,
     );
 
     this.logger.log(
-      `User ${userId} left chat room ID: ${chatRoom.id}. Current count: ${chatRoom.member_count}`,
+      `User ${userId} left chat room ID: ${chatRoom.id}. Current count: ${chatRoom.memberCount}`,
     );
 
     return chatRoom.id;

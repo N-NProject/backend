@@ -162,10 +162,10 @@ export class UserService {
           board: {
             boardId: board.id,
             title: board.title,
-            currentPerson: chatRoom.member_count,
-            maxCapacity: board.max_capacity,
+            currentPerson: chatRoom.memberCount,
+            maxCapacity: chatRoom.maxMemberCount,
             description: board.description,
-            startTime: board.start_time,
+            startTime: board.startTime,
             category: board.category,
             location: {
               id: board.location?.id || 0,
