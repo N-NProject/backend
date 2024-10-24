@@ -135,7 +135,7 @@ describe('ChatRoomService', () => {
 
       await service.joinChatRoomByBoardId(1, 1);
       expect(chatRoomRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ member_count: 2 }),
+        expect.objectContaining({ memberCount: 2 }),
       );
       expect(userChatRoomRepository.save).toHaveBeenCalled();
     });
@@ -226,7 +226,7 @@ describe('ChatRoomService', () => {
         'broadcastMessage',
         {
           chatRoomId: 1,
-          message: 'Hello',
+          content: 'Hello',
           nickName: 'User',
         },
       );
