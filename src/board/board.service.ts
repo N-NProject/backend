@@ -21,6 +21,7 @@ import { Message } from '../message/entities/message.entity';
 import { User } from '../user/entities/user.entity';
 import { ChatRoom } from '../chat-room/entities/chat-room.entity';
 import { BoardMapper } from './dto/board.mapper';
+import { ChatRoomMapper } from '../chat-room/dto/chat-room.mapper';
 
 @Injectable()
 export class BoardService {
@@ -31,10 +32,13 @@ export class BoardService {
     private readonly boardRepository: Repository<Board>,
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,
+    @InjectRepository(ChatRoom)
+    private readonly chatRoomRepository: Repository<ChatRoom>,
     private readonly locationService: LocationService,
     private readonly chatRoomService: ChatRoomService,
     private dataSource: DataSource,
     private readonly boardMapper: BoardMapper,
+    private readonly chatRoomMapper: ChatRoomMapper,
   ) {}
 
   async createBoard(
@@ -65,8 +69,6 @@ export class BoardService {
         user,
         ...createBoardDto,
         location: newLocation as DeepPartial<Location>,
-        max_capacity: createBoardDto.maxCapacity,
-        start_time: createBoardDto.startTime,
       });
 
       const savedBoard: Board = await queryRunner.manager.save(board);
@@ -76,11 +78,12 @@ export class BoardService {
         await this.chatRoomService.createChatRoomForBoard(
           queryRunner,
           savedBoard,
+          createBoardDto.maxCapacity,
           user,
         );
 
       // Board에 ChatRoom을 연결
-      savedBoard.chat_room = chatRoom;
+      savedBoard.chatRoom = chatRoom;
       await queryRunner.manager.save(savedBoard);
 
       await queryRunner.commitTransaction();
@@ -89,11 +92,7 @@ export class BoardService {
         `게시판과 채팅방이 생성되었습니다. Board ID: ${savedBoard.id}, ChatRoom ID: ${chatRoom.id}`,
       );
 
-      return this.boardMapper.toBoardResponseDto(
-        savedBoard,
-        user.id,
-        chatRoom.member_count,
-      );
+      return this.boardMapper.toBoardResponseDto(savedBoard, user.id, chatRoom);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       if (err.code === '23505') {
@@ -136,11 +135,7 @@ export class BoardService {
           );
         }
 
-        return this.boardMapper.toBoardResponseDto(
-          board,
-          undefined,
-          chatRoom.member_count,
-        );
+        return this.boardMapper.toBoardResponseDto(board, undefined, chatRoom);
       }),
     );
 
@@ -168,11 +163,7 @@ export class BoardService {
       throw new NotFoundException('게시판에 연결된 채팅방을 찾을 수 없습니다.');
     }
 
-    return this.boardMapper.toBoardResponseDto(
-      board,
-      userId,
-      chatRoom.member_count,
-    );
+    return this.boardMapper.toBoardResponseDto(board, userId, chatRoom);
   }
 
   async updateBoard(
@@ -195,22 +186,29 @@ export class BoardService {
       );
     }
 
-    const updatedBoard: Board = await this.boardMapper.updateBoardFromDto(
-      board,
-      updateBoardDto,
-    );
-    const savedBoard: Board = await this.boardRepository.save(updatedBoard);
-
     const chatRoom: ChatRoom =
       await this.chatRoomService.findChatRoomByBoardId(id);
     if (!chatRoom) {
       throw new NotFoundException('게시판에 연결된 채팅방을 찾을 수 없습니다.');
     }
 
+    const updatedBoard: Board = await this.boardMapper.updateBoardFromDto(
+      board,
+      updateBoardDto,
+    );
+    const savedBoard: Board = await this.boardRepository.save(updatedBoard);
+
+    const updatedChatRoom: ChatRoom = this.chatRoomMapper.updateChatRoomFromDto(
+      chatRoom,
+      updateBoardDto,
+    );
+    const savedChatRoom: ChatRoom =
+      await this.chatRoomRepository.save(updatedChatRoom);
+
     return this.boardMapper.toBoardResponseDto(
       savedBoard,
       userId,
-      chatRoom.member_count || 0,
+      savedChatRoom,
     );
   }
 
@@ -229,8 +227,8 @@ export class BoardService {
     }
 
     // 먼저 관련된 메시지를 삭제합니다.
-    if (board.chat_room?.messages) {
-      await this.messageRepository.remove(board.chat_room.messages);
+    if (board.chatRoom?.messages) {
+      await this.messageRepository.remove(board.chatRoom.messages);
     }
 
     await this.boardRepository.remove(board);
@@ -253,7 +251,7 @@ export class BoardService {
         location_name,
       });
     } else {
-      newLocation.location_name = location_name;
+      newLocation.locationName = location_name;
       await this.locationService.updateLocation(newLocation);
     }
 

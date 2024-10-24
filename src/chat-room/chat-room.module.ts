@@ -11,6 +11,7 @@ import { Board } from '../board/entities/board.entity';
 import { UserModule } from '../user/user.module';
 import { BoardsModule } from '../board/board.module';
 import { SseModule } from '../sse/sse.module';
+import { ChatRoomMapper } from './dto/chat-room.mapper';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { SseModule } from '../sse/sse.module';
     forwardRef(() => SseModule),
   ],
   controllers: [ChatRoomController],
-  providers: [ChatRoomService],
-  exports: [ChatRoomService, TypeOrmModule],
+  providers: [ChatRoomService, ChatRoomMapper],
+  exports: [ChatRoomService, TypeOrmModule, ChatRoomMapper],
 })
 export class ChatRoomModule {}

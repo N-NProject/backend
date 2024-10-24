@@ -12,14 +12,13 @@ export class BoardMapper {
   toBoardResponseDto(
     board: Board,
     userId: number | undefined,
-    currentPerson: number,
+    chatRoom: ChatRoom,
   ): BoardResponseDto {
     const {
       id,
       title,
-      max_capacity,
       description,
-      start_time,
+      startTime,
       date,
       category,
       createdAt,
@@ -33,17 +32,17 @@ export class BoardMapper {
     return {
       id,
       title,
-      maxCapacity: max_capacity,
-      currentPerson,
+      maxCapacity: chatRoom.maxMemberCount,
+      currentPerson: chatRoom.memberCount,
       description,
-      startTime: start_time,
+      startTime: startTime,
       date,
       category,
       location: {
         id: location.id,
         latitude: location.latitude,
         longitude: location.longitude,
-        locationName: location.location_name,
+        locationName: location.locationName,
       },
       createdAt,
       updatedAt,
@@ -62,8 +61,8 @@ export class BoardMapper {
       board.location = await this.locationService.updateLocation({
         ...board.location,
         ...updateBoardDto.location,
-        location_name:
-          updateBoardDto.locationName || board.location.location_name,
+        locationName:
+          updateBoardDto.locationName || board.location.locationName,
       });
     }
 
@@ -72,11 +71,9 @@ export class BoardMapper {
       board.category = updateBoardDto.category;
     if (updateBoardDto.description !== undefined)
       board.description = updateBoardDto.description;
-    if (updateBoardDto.maxCapacity !== undefined)
-      board.max_capacity = updateBoardDto.maxCapacity;
     if (updateBoardDto.date !== undefined) board.date = updateBoardDto.date;
     if (updateBoardDto.startTime !== undefined)
-      board.start_time = updateBoardDto.startTime;
+      board.startTime = updateBoardDto.startTime;
 
     return board;
   }
@@ -95,16 +92,16 @@ export class BoardMapper {
     return {
       id: board.id,
       title: board.title,
-      currentPerson: chatRoom.member_count,
-      maxCapacity: board.max_capacity,
+      currentPerson: chatRoom.memberCount,
+      maxCapacity: chatRoom.maxMemberCount,
       description: board.description,
-      startTime: board.start_time,
+      startTime: board.startTime,
       category: board.category,
       location: {
         id: board.location?.id || 0,
         latitude: board.location?.latitude || 0,
         longitude: board.location?.longitude || 0,
-        locationName: board.location?.location_name || 'Unknown location',
+        locationName: board.location?.locationName || 'Unknown location',
       },
       date: board.date,
       status: new Date(board.date) > new Date() ? 'OPEN' : 'CLOSED',
