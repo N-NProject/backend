@@ -238,7 +238,7 @@ export class ChatRoomService {
   public async findChatRoomByBoardId(boardId: number): Promise<ChatRoom> {
     return this.chatRoomRepository.findOne({
       where: { board: { id: boardId } },
-      relations: ['userChatRooms', 'userChatRooms.user'],
+      relations: ['board', 'userChatRooms', 'userChatRooms.user'],
     });
   }
 }

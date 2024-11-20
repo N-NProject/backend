@@ -60,37 +60,21 @@ export class BoardController {
   @UseGuards(AuthGuard)
   @Post()
   async create(
-    @Body(ValidationPipe) createBoardDto: CreateBoardDto,
-    @Token('sub') id: number,
+      @Body(ValidationPipe) createBoardDto: CreateBoardDto,
+      @Token('sub') id: number,
   ): Promise<BoardResponseDto> {
+    console.log('Received CreateBoardDto:', createBoardDto); // 데이터 확인
     return this.boardService.createBoard(createBoardDto, id);
   }
 
   @ApiOperation({ summary: '특정 게시물 조회' })
   @Get(':boardId')
   async findOne(
-    @Param() boardIdDto: BoardIdDto,
-    @Req() req: Request,
+      @Param() boardIdDto: BoardIdDto,
   ): Promise<BoardResponseDto> {
-    // 쿠키에서 JWT 토큰을 추출
-    const token = req.cookies['accessToken'];
-
-    if (!token) {
-      throw new UnauthorizedException('JWT 토큰이 쿠키에 없습니다.');
-    }
-
-    // JwtService를 이용해 토큰 디코딩
-    const jwtService = new JwtService({ secret: 'JWT_SECRET' });
-    const decodedToken = jwtService.decode(token) as any;
-
-    // sub 클레임에서 userId 추출
-    const userId = decodedToken?.sub;
-    if (!userId) {
-      throw new UnauthorizedException('유효한 사용자 ID가 아닙니다.');
-    }
-
-    return this.boardService.findOne(boardIdDto.boardId, userId);
+    return this.boardService.findOne(boardIdDto.boardId);
   }
+
 
   @ApiOperation({ summary: '게시물 업데이트' })
   @ApiCookieAuth()

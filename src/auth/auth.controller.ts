@@ -11,10 +11,11 @@ import {
 } from '@nestjs/common';
 import axios from 'axios';
 import { Request, Response } from 'express';
-import { UserService } from '../user/user.service';
+import { UserService } from 'src/user/user.service';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import { ApiTags } from '@nestjs/swagger';
+import * as domain from "domain";
 
 @ApiTags('Auth')
 @Controller('api/v1/auth')
@@ -29,9 +30,9 @@ export class AuthController {
   private readonly refreshTokenPath = '/api/v1/auth/redirect';
 
   constructor(
-    private readonly config: ConfigService,
-    private readonly userService: UserService,
-    private readonly authService: AuthService,
+      private readonly config: ConfigService,
+      private readonly userService: UserService,
+      private readonly authService: AuthService,
   ) {
     this.origin = this.config.get<string>('ORIGIN');
     this.client_id = this.config.get<string>('REST_API');
@@ -60,24 +61,24 @@ export class AuthController {
 
     try {
       const accessTokenResponse = await axios.post(
-        'https://kauth.kakao.com/oauth/token',
-        data,
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+          'https://kauth.kakao.com/oauth/token',
+          data,
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
           },
-        },
       );
 
       const kakaoUserInfoResponse = await axios.post(
-        'https://kapi.kakao.com/v2/user/me',
-        {},
-        {
-          headers: {
-            Authorization: 'Bearer ' + accessTokenResponse.data.access_token,
-            'Content-Type': 'application/x-www-form-urlencoded',
+          'https://kapi.kakao.com/v2/user/me',
+          {},
+          {
+            headers: {
+              Authorization: 'Bearer ' + accessTokenResponse.data.access_token,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
           },
-        },
       );
 
       const kakaoId = kakaoUserInfoResponse.data.id;
@@ -86,20 +87,21 @@ export class AuthController {
       let user = await this.userService.getUserByKakaoId(kakaoId);
       if (!user) {
         user = await this.userService.createUserWithKakaoIdAndUsername(
-          kakaoId,
-          nickname,
+            kakaoId,
+            nickname,
         );
       }
 
-      const { accessToken, refreshToken } = await this.authService.createTokens(
-        user.id,
+      const {accessToken, refreshToken} = await this.authService.createTokens(
+          user.id,
       );
 
       this.setTokens(
-        res,
-        accessToken,
-        refreshToken,
-        'http://localhost:3000/boards',
+          res,
+          accessToken,
+          refreshToken,
+          'here-there-fe.vercel.app',
+          'https://here-there-fe.vercel.app/boards',
       );
     } catch {
       throw new BadRequestException();
@@ -108,17 +110,17 @@ export class AuthController {
 
   @Get('redirect/refresh')
   async refresh(@Req() req: Request, @Res() res: Response) {
-    const { accessToken, refreshToken } = await this.authService.refreshTokens(
-      req.cookies['refreshToken'],
+    const {accessToken, refreshToken} = await this.authService.refreshTokens(
+        req.cookies['refreshToken'],
     );
 
-    this.setTokens(res, accessToken, refreshToken);
+    this.setTokens(res, accessToken, refreshToken, 'here-there-fe.vercel.app');
   }
 
   @Post('logout')
   async logout(@Res() res: Response) {
-    res.clearCookie('accessToken', { path: this.accessTokenPath });
-    res.clearCookie('refreshToken', { path: this.refreshTokenPath });
+    res.clearCookie('accessToken', {path: this.accessTokenPath});
+    res.clearCookie('refreshToken', {path: this.refreshTokenPath});
 
     res.sendStatus(204);
   }
@@ -139,28 +141,37 @@ export class AuthController {
   }
 
   private setTokens(
-    res: Response,
-    accessToken: string,
-    refreshToken: string,
-    redirectUrl?: string,
+      res: Response,
+      accessToken: string,
+      refreshToken: string,
+      domain: string,
+      redirectUrl?: string,
   ) {
+    // 쿠키 설정 로그 추가
+    this.logger.log(`Setting accessToken cookie: ${accessToken}`);
+    this.logger.log(`Setting refreshToken cookie: ${refreshToken}`);
+    this.logger.log(`Cookie domain: ${domain}`);
+    this.logger.log(`Redirect URL: ${redirectUrl}`);
+
+    
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
-      // secure: true, // HTTPS 사용 시 활성화
-      sameSite: 'strict',
-      path: this.accessTokenPath, // 쿠키가 /api/v1 경로에서만 유효
+      secure: true,
+      sameSite: 'none',
+      //domain,
+      path: this.accessTokenPath,
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      // secure: true, // HTTPS 사용 시 활성화
-      sameSite: 'strict',
-      path: this.refreshTokenPath, // 쿠키가 /api/v1/auth/redirect 경로에서만 유효
+      secure: true,
+      sameSite: 'none',
+      //domain,
+      path: this.refreshTokenPath,
     });
 
-    this.logger.log(
-      `Tokens issued - Access Token: ${accessToken}, Refresh Token: ${refreshToken}`,
-    );
+
+    this.logger.log(`Tokens issued - Access Token: ${accessToken}, Refresh Token: ${refreshToken}`);
 
     if (redirectUrl) {
       res.redirect(302, redirectUrl);
@@ -169,3 +180,6 @@ export class AuthController {
     }
   }
 }
+
+
+

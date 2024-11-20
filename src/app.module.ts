@@ -13,6 +13,7 @@ import { EventsModule } from './events/evnets.module';
 import { MessageService } from './message/message.service';
 import { MessageModule } from './message/message.module';
 import { LoggerMiddleware } from './global/middleware/logger.middleware';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { LoggerMiddleware } from './global/middleware/logger.middleware';
     SseModule,
     UserModule,
   ],
-  controllers: [SseController],
+  controllers: [SseController,HealthController],
   providers: [MessageService],
 })
 export class AppModule implements NestModule {

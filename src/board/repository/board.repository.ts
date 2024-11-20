@@ -8,16 +8,20 @@ import { PagingParams } from '../../global/common/type';
 @Injectable()
 export class CustomBoardRepository {
   constructor(
-    @InjectRepository(Board)
-    private readonly boardRepository: Repository<Board>,
+      @InjectRepository(Board)
+      private readonly boardRepository: Repository<Board>,
   ) {}
 
-  async paginateCreatedBoards(userId: number, pagingParams?: PagingParams) {
+  // 유저가 생성한 게시판을 페이징 처리하여 가져오는 메서드
+  async paginateCreatedBoards(
+      userId: number,
+      pagingParams?: PagingParams,
+  ) {
     const queryBuilder = this.boardRepository
-      .createQueryBuilder('board')
-      .leftJoinAndSelect('board.location', 'location')
-      .where('board.user_id = :userId', { userId })
-      .orderBy('board.updatedAt', 'DESC');
+        .createQueryBuilder('board')
+        .leftJoinAndSelect('board.location', 'location')
+        .where('board.user.id = :userId', { userId }) // 명확히 user.id 참조
+        .orderBy('board.updatedAt', 'DESC');
 
     const paginator = buildPaginator({
       entity: Board,
@@ -42,17 +46,18 @@ export class CustomBoardRepository {
     };
   }
 
+  // 유저가 참여한 게시판을 페이징 처리하여 가져오는 메서드
   async paginateJoinedBoards(
-    userId: number,
-    chatroomIds: number[],
-    pagingParams?: PagingParams,
+      userId: number,
+      chatroomIds: number[],
+      pagingParams?: PagingParams,
   ) {
     const queryBuilder = this.boardRepository
-      .createQueryBuilder('board')
-      .leftJoinAndSelect('board.location', 'location')
-      .where('board.chat_room IN (:...chatroomIds)', { chatroomIds })
-      .andWhere('board.user_id != :userId', { userId })
-      .orderBy('board.updatedAt', 'DESC');
+        .createQueryBuilder('board')
+        .leftJoinAndSelect('board.location', 'location')
+        .where('board.chatRoom.id IN (:...chatroomIds)', { chatroomIds }) // 명확한 필드 참조
+        .andWhere('board.user.id != :userId', { userId })
+        .orderBy('board.updatedAt', 'DESC');
 
     const paginator = buildPaginator({
       entity: Board,
