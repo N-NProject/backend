@@ -148,10 +148,10 @@ export class BoardService {
     };
   }
 
-  async findOne(id: number): Promise<BoardResponseDto> {
+  async findOne(id: number, userId: number): Promise<BoardResponseDto> {
     const board = await this.boardRepository.findOne({
       where: { id },
-      relations: ['user', 'location', 'chatRoom'],
+      relations: ['user', 'location'],
     });
     if (!board) {
       throw new NotFoundException(`ID가 ${id}인 게시판을 찾을 수 없습니다.`);
@@ -162,8 +162,10 @@ export class BoardService {
       throw new NotFoundException('게시판에 연결된 채팅방을 찾을 수 없습니다.');
     }
 
-    return this.boardMapper.toBoardResponseDto(board, null, chatRoom);
+    // 작성자 정보와 비교를 위해 userId 포함
+    return this.boardMapper.toBoardResponseDto(board, userId, chatRoom);
   }
+
 
 
   async updateBoard(

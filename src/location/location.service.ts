@@ -15,7 +15,7 @@ export class LocationService {
     const location = this.locationRepository.create({
       latitude: data.latitude,
       longitude: data.longitude,
-      locationName: data.location_name, 
+      locationName: data.location_name,
     });
 
     return this.locationRepository.save(location);

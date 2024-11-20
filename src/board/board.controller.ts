@@ -68,13 +68,15 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: '특정 게시물 조회' })
+  @ApiCookieAuth()
+  @UseGuards(AuthGuard) 
   @Get(':boardId')
   async findOne(
       @Param() boardIdDto: BoardIdDto,
+      @Token('sub') userId: number,
   ): Promise<BoardResponseDto> {
-    return this.boardService.findOne(boardIdDto.boardId);
+    return this.boardService.findOne(boardIdDto.boardId, userId);
   }
-
 
   @ApiOperation({ summary: '게시물 업데이트' })
   @ApiCookieAuth()
