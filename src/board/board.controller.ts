@@ -33,7 +33,8 @@ import { BoardIdDto } from './dto/boardId.dto';
 @ApiTags('Boards')
 @Controller('api/v1/boards')
 export class BoardController {
-  constructor(private readonly boardService: BoardService) {}
+  constructor(private readonly boardService: BoardService,
+              private readonly jwtService: JwtService,) {}
 
   @ApiQuery({
     name: 'page',
@@ -68,15 +69,30 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: '특정 게시물 조회' })
-  @ApiCookieAuth()
-  @UseGuards(AuthGuard) 
   @Get(':boardId')
   async findOne(
       @Param() boardIdDto: BoardIdDto,
-      @Token('sub') userId: number,
+      @Req() req: Request,
   ): Promise<BoardResponseDto> {
+    // 쿠키에서 JWT 토큰을 추출
+    const token = req.cookies?.['accessToken']; // 쿠키가 없는 경우도 처리
+
+    let userId: number | null = null;
+
+    // 토큰이 있는 경우 디코딩
+    if (token) {
+      try {
+        const decodedToken = this.jwtService.decode(token) as any;
+        userId = decodedToken?.sub || null;
+      } catch (error) {
+        console.warn('JWT 디코딩 실패:', error.message);
+        userId = null; // 디코딩 실패 시 userId를 null로 설정
+      }
+    }
+
     return this.boardService.findOne(boardIdDto.boardId, userId);
   }
+
 
   @ApiOperation({ summary: '게시물 업데이트' })
   @ApiCookieAuth()
