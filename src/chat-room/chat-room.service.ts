@@ -26,27 +26,27 @@ export class ChatRoomService {
   private readonly logger = new Logger(ChatRoomService.name);
 
   constructor(
-    @InjectRepository(ChatRoom)
-    private readonly chatRoomRepository: Repository<ChatRoom>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(Message)
-    private readonly messageRepository: Repository<Message>,
-    @InjectRepository(UserChatRoom)
-    private userChatRoomRepository: Repository<UserChatRoom>,
-    @Inject(forwardRef(() => BoardService))
-    private readonly boardService: BoardService,
-    @Inject(forwardRef(() => EventsGateway))
-    private readonly eventsGateway: EventsGateway,
-    private readonly sseService: SseService,
+      @InjectRepository(ChatRoom)
+      private readonly chatRoomRepository: Repository<ChatRoom>,
+      @InjectRepository(User)
+      private readonly userRepository: Repository<User>,
+      @InjectRepository(Message)
+      private readonly messageRepository: Repository<Message>,
+      @InjectRepository(UserChatRoom)
+      private userChatRoomRepository: Repository<UserChatRoom>,
+      @Inject(forwardRef(() => BoardService))
+      private readonly boardService: BoardService,
+      @Inject(forwardRef(() => EventsGateway))
+      private readonly eventsGateway: EventsGateway,
+      private readonly sseService: SseService,
   ) {}
 
   /** 게시글에 해당하는 채팅방 생성 */
   async createChatRoomForBoard(
-    queryRunner: QueryRunner,
-    board: Board,
-    maxMemberCount: number,
-    user: User,
+      queryRunner: QueryRunner,
+      board: Board,
+      maxMemberCount: number,
+      user: User,
   ): Promise<ChatRoom> {
     const chatRoom: ChatRoom = queryRunner.manager.create(ChatRoom, {
       board: board,
@@ -58,11 +58,11 @@ export class ChatRoomService {
 
     // 게시글 작성자를 채팅방에 추가
     const userChatRoom: UserChatRoom = queryRunner.manager.create(
-      UserChatRoom,
-      {
-        user: user,
-        chatRoom: savedChatRoom,
-      },
+        UserChatRoom,
+        {
+          user: user,
+          chatRoom: savedChatRoom,
+        },
     );
     await queryRunner.manager.save(userChatRoom);
 
@@ -85,10 +85,7 @@ export class ChatRoomService {
   }
 
   // 채팅방에 참가
-  async joinChatRoomByBoardId(
-    boardId: number,
-    userId: number,
-  ): Promise<number> {
+  async joinChatRoomByBoardId(boardId: number, userId: number): Promise<number> {
     if (!userId) {
       throw new UnauthorizedException('UserId를 찾을 수 없습니다');
     }
@@ -99,21 +96,34 @@ export class ChatRoomService {
       throw new NotFoundException('채팅방을 찾을 수 없습니다.');
     }
 
-    if (chatRoom.memberCount >= chatRoom.maxMemberCount) {
-      throw new BadRequestException(
-        '채팅방의 최대 인원수를 초과할 수 없습니다.',
-      );
-    }
-
     // 동일한 유저가 이미 같은 chatRoomId에 들어가 있는지 확인
     const userChatRoom = chatRoom.userChatRooms.find(
-      (userChatRoom) => userChatRoom.user.id == userId,
+        (userChatRoom) => userChatRoom.user.id === userId,
     );
 
     if (userChatRoom) {
-      throw new ConflictException('user가 이미 방에 들어가있습니다.');
+      this.logger.log(
+          `User ${userId} is already in ChatRoom ${chatRoom.id}. Redirecting to the chat room.`,
+      );
+
+      // 이미 방에 참가한 경우에도 멤버 수를 알림
+      const user = await this.getUser(userId);
+      this.sseService.notifyMemberCountChange(
+          chatRoom.id,
+          chatRoom.memberCount,
+          user.username,
+      );
+
+      return chatRoom.id; // 기존 방 ID 반환
     }
 
+    if (chatRoom.memberCount >= chatRoom.maxMemberCount) {
+      throw new BadRequestException(
+          '채팅방의 최대 인원수를 초과할 수 없습니다.',
+      );
+    }
+
+    // 새로운 유저를 채팅방에 추가
     chatRoom.memberCount += 1;
     await this.chatRoomRepository.save(chatRoom);
 
@@ -126,22 +136,23 @@ export class ChatRoomService {
 
     const user = await this.getUser(userId);
     this.sseService.notifyMemberCountChange(
-      chatRoom.id,
-      chatRoom.memberCount,
-      user.username,
+        chatRoom.id,
+        chatRoom.memberCount,
+        user.username,
     );
 
     this.logger.log(
-      `User ${userId} joined chat room ID: ${chatRoom.id}. Current count: ${chatRoom.memberCount}`,
+        `User ${userId} joined chat room ID: ${chatRoom.id}. Current count: ${chatRoom.memberCount}`,
     );
 
     return chatRoom.id;
   }
 
+
   // 채팅방에서 나가기
   async leaveChatRoomByBoardId(
-    boardId: number,
-    userId: number,
+      boardId: number,
+      userId: number,
   ): Promise<number> {
     const chatRoom = await this.chatRoomRepository.findOne({
       where: { board: { id: boardId } },
@@ -164,23 +175,23 @@ export class ChatRoomService {
 
     const user = await this.getUser(userId);
     this.sseService.notifyMemberCountChange(
-      chatRoom.id,
-      chatRoom.memberCount,
-      user.username,
+        chatRoom.id,
+        chatRoom.memberCount,
+        user.username,
     );
 
     this.logger.log(
-      `User ${userId} left chat room ID: ${chatRoom.id}. Current count: ${chatRoom.memberCount}`,
+        `User ${userId} left chat room ID: ${chatRoom.id}. Current count: ${chatRoom.memberCount}`,
     );
 
     return chatRoom.id;
   }
 
   async sendMessage(
-    chatRoomId: number,
-    userId: number,
-    content: string,
-    username: string,
+      chatRoomId: number,
+      userId: number,
+      content: string,
+      username: string,
   ): Promise<Message> {
     const chatRoom = await this.chatRoomRepository.findOne({
       where: { id: chatRoomId },
@@ -211,7 +222,7 @@ export class ChatRoomService {
     });
 
     this.logger.log(
-      `채팅방 ${chatRoomId}에 메시지 전송: ${message.content} by ${username}`,
+        `채팅방 ${chatRoomId}에 메시지 전송: ${message.content} by ${username}`,
     );
 
     return message;
@@ -224,7 +235,7 @@ export class ChatRoomService {
   }
 
   async getRoomUpdatesByBoardId(
-    boardId: number,
+      boardId: number,
   ): Promise<Observable<SseResponseDto>> {
     const chatRoom = await this.findChatRoomByBoardId(boardId);
     if (!chatRoom) {
@@ -238,7 +249,7 @@ export class ChatRoomService {
   public async findChatRoomByBoardId(boardId: number): Promise<ChatRoom> {
     return this.chatRoomRepository.findOne({
       where: { board: { id: boardId } },
-      relations: ['board', 'userChatRooms', 'userChatRooms.user'],
+      relations: ['userChatRooms', 'userChatRooms.user'],
     });
   }
 }
