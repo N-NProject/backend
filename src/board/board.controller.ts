@@ -33,7 +33,8 @@ import { BoardIdDto } from './dto/boardId.dto';
 @ApiTags('Boards')
 @Controller('api/v1/boards')
 export class BoardController {
-  constructor(private readonly boardService: BoardService) {}
+  constructor(private readonly boardService: BoardService,
+              private readonly jwtService: JwtService,) {}
 
   @ApiQuery({
     name: 'page',
@@ -60,37 +61,38 @@ export class BoardController {
   @UseGuards(AuthGuard)
   @Post()
   async create(
-    @Body(ValidationPipe) createBoardDto: CreateBoardDto,
-    @Token('sub') id: number,
+      @Body(ValidationPipe) createBoardDto: CreateBoardDto,
+      @Token('sub') id: number,
   ): Promise<BoardResponseDto> {
+    console.log('Received CreateBoardDto:', createBoardDto); // 데이터 확인
     return this.boardService.createBoard(createBoardDto, id);
   }
 
   @ApiOperation({ summary: '특정 게시물 조회' })
   @Get(':boardId')
   async findOne(
-    @Param() boardIdDto: BoardIdDto,
-    @Req() req: Request,
+      @Param() boardIdDto: BoardIdDto,
+      @Req() req: Request,
   ): Promise<BoardResponseDto> {
     // 쿠키에서 JWT 토큰을 추출
-    const token = req.cookies['accessToken'];
+    const token = req.cookies?.['accessToken']; // 쿠키가 없는 경우도 처리
 
-    if (!token) {
-      throw new UnauthorizedException('JWT 토큰이 쿠키에 없습니다.');
-    }
+    let userId: number | null = null;
 
-    // JwtService를 이용해 토큰 디코딩
-    const jwtService = new JwtService({ secret: 'JWT_SECRET' });
-    const decodedToken = jwtService.decode(token) as any;
-
-    // sub 클레임에서 userId 추출
-    const userId = decodedToken?.sub;
-    if (!userId) {
-      throw new UnauthorizedException('유효한 사용자 ID가 아닙니다.');
+    // 토큰이 있는 경우 디코딩
+    if (token) {
+      try {
+        const decodedToken = this.jwtService.decode(token) as any;
+        userId = decodedToken?.sub || null;
+      } catch (error) {
+        console.warn('JWT 디코딩 실패:', error.message);
+        userId = null; // 디코딩 실패 시 userId를 null로 설정
+      }
     }
 
     return this.boardService.findOne(boardIdDto.boardId, userId);
   }
+
 
   @ApiOperation({ summary: '게시물 업데이트' })
   @ApiCookieAuth()

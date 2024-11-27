@@ -12,10 +12,17 @@ export class LocationService {
   ) {}
 
   async createLocation(data: CreateLocationDto): Promise<Location> {
-    const location = this.locationRepository.create(data);
-    await this.locationRepository.save(location);
-    return location;
+    const location = this.locationRepository.create({
+      latitude: data.latitude,
+      longitude: data.longitude,
+      locationName: data.location_name,
+    });
+
+    return this.locationRepository.save(location);
   }
+
+
+
 
   async findLocationByCoordinates(
     latitude: number,

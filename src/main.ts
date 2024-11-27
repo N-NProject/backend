@@ -20,13 +20,16 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger', app, document);
 
-  // CORS 설정 추가
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: ['https://here-there-fe.vercel.app', 'https://meetingsquare.site'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: 'Content-Type, Authorization',
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'], // 추가로 필요한 헤더를 명시
+    exposedHeaders: ['Set-Cookie'], // 클라이언트가 응답에서 읽을 수 있는 헤더
   });
+
+
+
 
   // Socket.IO 어댑터 설정
   app.useWebSocketAdapter(new IoAdapter(app));

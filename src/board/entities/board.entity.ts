@@ -49,7 +49,8 @@ export class Board extends TimeStamp {
   @ApiProperty({ description: '날짜', nullable: false })
   date: string;
 
-  @OneToOne(() => ChatRoom, (chatRoom) => chatRoom.board)
+  @OneToOne(() => ChatRoom, (chatRoom) => chatRoom.board, { eager: true })
   @JoinColumn({ name: 'chat_room_id' })
+  @ApiProperty({ description: '채팅방' })
   chatRoom: ChatRoom;
 }

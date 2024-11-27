@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import {
   ConflictException,
   Injectable,
@@ -148,22 +149,25 @@ export class BoardService {
     };
   }
 
-  async findOne(id: number, userId: number): Promise<BoardResponseDto> {
+  async findOne(id: number, userId: number | null): Promise<BoardResponseDto> {
     const board = await this.boardRepository.findOne({
       where: { id },
       relations: ['user', 'location'],
     });
+
     if (!board) {
       throw new NotFoundException(`ID가 ${id}인 게시판을 찾을 수 없습니다.`);
     }
 
-    const chatRoom: ChatRoom =
-      await this.chatRoomService.findChatRoomByBoardId(id);
+    const chatRoom: ChatRoom = await this.chatRoomService.findChatRoomByBoardId(id);
     if (!chatRoom) {
       throw new NotFoundException('게시판에 연결된 채팅방을 찾을 수 없습니다.');
     }
 
-    return this.boardMapper.toBoardResponseDto(board, userId, chatRoom);
+    const response = this.boardMapper.toBoardResponseDto(board, userId, chatRoom);
+    response.editable = userId === board.user.id;
+
+    return response;
   }
 
   async updateBoard(
@@ -235,26 +239,36 @@ export class BoardService {
   }
 
   private async getOrCreateLocation(
-    location: { latitude: number; longitude: number },
-    location_name: string,
+      location: { latitude: number; longitude: number },
+      locationName: string,
   ): Promise<Location> {
+    console.log('Received locationName:', locationName); // 추가
+    console.log('Received location:', location); // 추가
+
     let newLocation: Location =
-      await this.locationService.findLocationByCoordinates(
-        location.latitude,
-        location.longitude,
-      );
+        await this.locationService.findLocationByCoordinates(
+            location.latitude,
+            location.longitude,
+        );
 
     if (!newLocation) {
+      console.log('Creating new location:', {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        location_name: locationName, // 디버깅
+      });
       newLocation = await this.locationService.createLocation({
         latitude: location.latitude,
         longitude: location.longitude,
-        location_name,
+        location_name: locationName, // 필드명 확인
       });
     } else {
-      newLocation.locationName = location_name;
+      console.log('Updating existing location:', newLocation);
+      newLocation.locationName = locationName;
       await this.locationService.updateLocation(newLocation);
     }
 
     return newLocation;
   }
+
 }
