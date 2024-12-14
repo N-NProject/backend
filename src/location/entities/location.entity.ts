@@ -16,7 +16,12 @@ export class Location {
   @ApiProperty({ description: '경도', nullable: false })
   longitude: number;
 
-  @Column({ type: 'varchar', length: 100, nullable: false })
+  @Column({
+    name: 'location_name',
+    type: 'varchar',
+    length: 100,
+    nullable: false,
+  })
   @ApiProperty({ description: '위치 이름', nullable: false })
   locationName: string;
 

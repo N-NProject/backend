@@ -13,6 +13,7 @@ import { EventsModule } from '../events/evnets.module';
 import { MessageModule } from '../message/message.module';
 import { SseService } from './sse.service';
 import { BoardMapper } from '../board/dto/board.mapper';
+import { CustomBoardRepository } from '../board/repository/board.repository';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { BoardMapper } from '../board/dto/board.mapper';
     ChatRoomService,
     SseService,
     BoardMapper,
+    CustomBoardRepository,
   ],
 })
 export class SseModule {}

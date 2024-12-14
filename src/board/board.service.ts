@@ -1,4 +1,3 @@
-import { Request } from 'express';
 import {
   ConflictException,
   Injectable,
@@ -23,6 +22,7 @@ import { User } from '../user/entities/user.entity';
 import { ChatRoom } from '../chat-room/entities/chat-room.entity';
 import { BoardMapper } from './dto/board.mapper';
 import { ChatRoomMapper } from '../chat-room/dto/chat-room.mapper';
+import { CustomBoardRepository } from './repository/board.repository';
 
 @Injectable()
 export class BoardService {
@@ -40,6 +40,7 @@ export class BoardService {
     private dataSource: DataSource,
     private readonly boardMapper: BoardMapper,
     private readonly chatRoomMapper: ChatRoomMapper,
+    private readonly customBoardRepository: CustomBoardRepository,
   ) {}
 
   async createBoard(
@@ -117,12 +118,11 @@ export class BoardService {
     const { page, limit } = paginationParams;
     const skip: number = (page - 1) * limit;
 
-    const [boards, totalCount] = await this.boardRepository.findAndCount({
-      relations: ['user', 'location'],
-      skip,
-      take: limit,
-      order: { updatedAt: 'DESC' },
-    });
+    const [boards, totalCount] =
+      await this.customBoardRepository.findBoardsOrderByStatusAndDeadline(
+        page,
+        limit,
+      );
 
     const totalPage: number = Math.ceil(totalCount / limit);
 
@@ -159,12 +159,17 @@ export class BoardService {
       throw new NotFoundException(`ID가 ${id}인 게시판을 찾을 수 없습니다.`);
     }
 
-    const chatRoom: ChatRoom = await this.chatRoomService.findChatRoomByBoardId(id);
+    const chatRoom: ChatRoom =
+      await this.chatRoomService.findChatRoomByBoardId(id);
     if (!chatRoom) {
       throw new NotFoundException('게시판에 연결된 채팅방을 찾을 수 없습니다.');
     }
 
-    const response = this.boardMapper.toBoardResponseDto(board, userId, chatRoom);
+    const response = this.boardMapper.toBoardResponseDto(
+      board,
+      userId,
+      chatRoom,
+    );
     response.editable = userId === board.user.id;
 
     return response;
@@ -239,17 +244,17 @@ export class BoardService {
   }
 
   private async getOrCreateLocation(
-      location: { latitude: number; longitude: number },
-      locationName: string,
+    location: { latitude: number; longitude: number },
+    locationName: string,
   ): Promise<Location> {
     console.log('Received locationName:', locationName); // 추가
     console.log('Received location:', location); // 추가
 
     let newLocation: Location =
-        await this.locationService.findLocationByCoordinates(
-            location.latitude,
-            location.longitude,
-        );
+      await this.locationService.findLocationByCoordinates(
+        location.latitude,
+        location.longitude,
+      );
 
     if (!newLocation) {
       console.log('Creating new location:', {
@@ -270,5 +275,4 @@ export class BoardService {
 
     return newLocation;
   }
-
 }
