@@ -9,6 +9,7 @@ import { Message } from '../message/entities/message.entity';
 import { BoardMapper } from './dto/board.mapper';
 import { ChatRoom } from '../chat-room/entities/chat-room.entity';
 import { ChatRoomModule } from '../chat-room/chat-room.module';
+import { CustomBoardRepository } from './repository/board.repository';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { ChatRoomModule } from '../chat-room/chat-room.module';
     forwardRef(() => ChatRoomModule),
   ],
   controllers: [BoardController],
-  providers: [BoardService, BoardMapper],
+  providers: [BoardService, BoardMapper, CustomBoardRepository],
   exports: [BoardService],
 })
 export class BoardsModule {}

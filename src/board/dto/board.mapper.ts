@@ -27,7 +27,12 @@ export class BoardMapper {
       user,
       location,
     } = board;
-    const status = new Date(board.date) > new Date() ? 'OPEN' : 'CLOSE';
+    console.log('chatRoom:', chatRoom);
+    const status =
+      new Date(board.date) > new Date() &&
+      chatRoom.memberCount < chatRoom.maxMemberCount
+        ? 'OPEN'
+        : 'CLOSE';
 
     return {
       id,

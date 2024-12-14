@@ -32,9 +32,13 @@ export class Board extends TimeStamp {
   @ApiProperty({ description: '설명', nullable: true })
   description: string;
 
-  @Column({ type: 'time', nullable: true })
+  @Column({ name: 'start_time', type: 'time', nullable: true })
   @ApiProperty({ description: '시작시간', nullable: true })
   startTime: string;
+
+  @ApiProperty({ description: '시작 날짜', nullable: false })
+  @Column({ type: 'date', nullable: false })
+  date: string;
 
   @ManyToOne(() => Location, (location) => location.boards)
   @JoinColumn({ name: 'location_id' })
@@ -44,10 +48,6 @@ export class Board extends TimeStamp {
   @Column({ type: 'enum', enum: Category, nullable: false })
   @ApiProperty({ description: '카테고리' })
   category: Category;
-
-  @Column({ type: 'date', nullable: false })
-  @ApiProperty({ description: '날짜', nullable: false })
-  date: string;
 
   @OneToOne(() => ChatRoom, (chatRoom) => chatRoom.board, { eager: true })
   @JoinColumn({ name: 'chat_room_id' })
